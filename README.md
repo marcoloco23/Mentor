@@ -1,6 +1,8 @@
-<div align="center">
+<p align="center">
+  <img src="docs/logo.png" alt="Mentor Logo" width="120"/>
+</p>
 
-<img src="https://raw.githubusercontent.com/marcoloco23/Mentor/main/docs/logo.png" alt="Mentor Logo" width="120"/>
+<div align="center">
 
 # Mentor: Your Personal AI Coach
 
