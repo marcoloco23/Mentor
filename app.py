@@ -8,7 +8,7 @@ from __future__ import annotations
 import uuid
 
 import streamlit as st
-from boot import memory_manager, llm_client  # <-- your existing wiring
+from src.boot import memory_manager, llm_client  # <-- your existing wiring
 from src.mentor import Mentor
 
 # ---------------------------------------------------------------------------
