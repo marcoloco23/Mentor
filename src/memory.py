@@ -17,7 +17,7 @@ USER_TZ = ZoneInfo("Europe/Berlin")
 RECENCY_HALFLIFE_DAYS = 30
 _MIN_SIMILARITY = 0.45
 _DUPLICATE_REGEX = re.compile(r"\W+")
-THREADS_FILE = os.path.join(os.path.dirname(__file__), "threads.json")
+THREADS_FILE = "threads.json"
 _threads_lock = Lock()
 
 logger = logging.getLogger("MentorMemory")

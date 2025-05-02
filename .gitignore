@@ -83,3 +83,6 @@ yarn-error.log
 *.swp
 *.swo
 .idea/
+
+.threads.json
+users/
