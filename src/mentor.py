@@ -6,9 +6,17 @@ from typing import Any
 from src.memory import MemoryManager
 from src.llm import LLMClient
 import logging
+from concurrent.futures import ThreadPoolExecutor, Future
 
 logger = logging.getLogger("MentorAgent")
+_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="mentor-bg")
 
+def _log_when_done(fut: Future) -> None:
+    """Log exceptions from background memory.store() calls."""
+    try:
+        fut.result()
+    except Exception as e:
+        logger.exception("Background memory.store() failed: %s", e)
 
 class Mentor:
     """
@@ -40,3 +48,25 @@ class Mentor:
         self.memory.store(user_msg, reply, self.user_id, self.agent_id)
         logger.info(f"Generated reply: {reply}")
         return reply
+
+    def stream_reply(self, user_msg: str):
+        """
+        Yields reply tokens as they arrive; kicks off memory.store() in the background
+        once the full reply has been assembled.
+        """
+        logger.info(f"Streaming reply for: {user_msg!r}")
+        mem_text = self.memory.retrieve(user_msg, self.user_id, self.k, self.version)
+        chunks = []
+        for token in self.llm.chat_stream(user_msg, mem_text):
+            chunks.append(token)
+            yield token
+        full_reply = "".join(chunks).strip()
+        fut = _EXECUTOR.submit(
+            self.memory.store,
+            user_msg,
+            full_reply,
+            self.user_id,
+            self.agent_id,
+        )
+        fut.add_done_callback(_log_when_done)
+        logger.info("Reply streamed; memory.store() dispatched in background")

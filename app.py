@@ -28,7 +28,7 @@ st.sidebar.markdown(
 
 if st.sidebar.button("⚙️ Reset Memory"):
     st.session_state.history = []
-    st.experimental_rerun()
+    st.rerun()
 
 # ---------- 3. main chat ----------
 st.title("🧑‍🏫 Mentor")
@@ -44,8 +44,6 @@ if prompt := st.chat_input("Ask your mentor…"):
     st.session_state.history.append(("user", prompt))
 
     # get mentor reply
-    reply = mentor(prompt)
-
     with st.chat_message("assistant"):
-        st.markdown(reply)
-    st.session_state.history.append(("assistant", reply))
+        response = st.write_stream(mentor.stream_reply(prompt))
+    st.session_state.history.append(("assistant", response))

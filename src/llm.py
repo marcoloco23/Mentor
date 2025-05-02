@@ -45,3 +45,21 @@ class LLMClient:
         )
         logger.info("LLM chat completion received")
         return resp.choices[0].message.content.strip()
+
+    def chat_stream(self, user_msg: str, mem_text: str):
+        """
+        Stream a reply using the LLM, yielding tokens as they arrive.
+        """
+        logger.info("Invoking LLM chat completion (streaming)")
+        prompt = SYSTEM_TEMPLATE.format(memories=mem_text)
+        messages = [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": user_msg},
+        ]
+        stream = self.llm.chat.completions.create(
+            model="gpt-4o-mini", messages=messages, temperature=0.7, stream=True
+        )
+        for chunk in stream:
+            content = chunk.choices[0].delta.content
+            if content:
+                yield content
