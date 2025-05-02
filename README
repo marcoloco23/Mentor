@@ -1,0 +1,83 @@
+
+
+# 🧑‍🏫 Mentor – Your Personal AI Coach
+
+Mentor is a conversational AI that **remembers what matters** and guides you with direct, no‑fluff advice.  
+Think of it as a seasoned mentor who interviews you, learns your goals, and asks sharp follow‑up questions to accelerate your growth.
+
+---
+
+## ✨ Vision
+
+1. **Long‑term relationship** – Mentor builds an evolving knowledge base about *you*: your goals, preferences, and past decisions.  
+2. **Socratic guidance** – It doesn’t lecture; it probes. Mentor asks questions that surface blind spots and spark self‑reflection.  
+3. **Actionable insight** – Each answer is concise, specific, and backed by the context it has stored—not generic self‑help jargon.  
+4. **Privacy & control** – All memories live in a dedicated memory layer (Mem0). You can inspect, export, or delete them at any time.
+
+---
+
+## 🔧 Architecture
+
+| Layer | Tech | Purpose |
+|-------|------|---------|
+| **UI** | Streamlit | Lightweight chat front‑end with token streaming |
+| **Agent** | `Mentor` class | Orchestrates retrieval → LLM → async store |
+| **Memory** | Mem0 | Vector + metadata store for long‑term memories |
+| **LLM** | OpenAI GPT‑4o‑mini (pluggable) | Generates and streams responses |
+
+> **Flow per turn**
+> 1. Retrieve top memories `k=5` (recency‑weighted, deduped)  
+> 2. Inject them into the system prompt and stream the answer  
+> 3. Persist the dialogue asynchronously in the background
+
+---
+
+## 🚀 Quickstart
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Set the following env vars (see `.env.example`):
+
+```
+OPENAI_API_KEY=sk-…
+MEM0_API_KEY=mem_…
+```
+
+---
+
+## 📚 Key Files
+
+| Path | Description |
+|------|-------------|
+| `src/mentor.py` | Core agent logic and streaming helper |
+| `src/memory.py` | Retrieval, re‑ranking, async persistence |
+| `src/llm.py` | Thin wrapper around the OpenAI client |
+| `app.py` | Streamlit UI |
+
+---
+
+## 🗺️ Roadmap
+
+- **Multi‑user auth** with secure per‑user key management  
+- **Scheduled reflections**: daily/weekly check‑ins driven by stored goals  
+- **Voice mode** using WebRTC + Whisper real‑time transcription  
+- **Plugin hooks** for calendar, tasks, or custom knowledge bases  
+
+---
+
+## 🤝 Contributing
+
+1. Fork & clone the repo  
+2. `pre-commit install` for linting hooks  
+3. Submit a PR with a concise description; small, focused patches are easier to review!
+
+---
+
+## 📝 License
+
+MIT — see `LICENSE`.
+
+*Crafted with curiosity and a dash of Socratic questioning.*
