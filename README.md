@@ -6,9 +6,6 @@
 
 # Mentor: Your Personal AI Coach
 
-[![GitHub Repo stars](https://img.shields.io/github/stars/marcoloco23/Mentor)](https://github.com/marcoloco23/Mentor/stargazers)
-[![Unit Tests](https://github.com/marcoloco23/Mentor/actions/workflows/test.yml/badge.svg)](https://github.com/marcoloco23/Mentor/actions/workflows/test.yml)
-
 <h3>
 <a href="#-architecture">Architecture</a> | <a href="#-quickstart">Quickstart</a> | <a href="#-features">Features</a> | <a href="#-roadmap">Roadmap</a> | <a href="#-contributing">Contributing</a> | <a href="#-license">License</a>
 </h3>
