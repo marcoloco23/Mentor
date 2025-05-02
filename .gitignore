@@ -84,5 +84,4 @@ yarn-error.log
 *.swo
 .idea/
 
-.threads.json
-users/
+data/
