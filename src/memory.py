@@ -36,7 +36,14 @@ class MemoryManager:
     ) -> str:
         """
         Return memories grouped by local date with time-stamped bullets.
+        If *query* is empty or only whitespace, no retrieval is attempted and an empty
+        string is returned. This protects against Mem0 400-errors on blank queries.
         """
+        query = (query or "").strip()
+        if not query:
+            logger.debug("Blank query – skipping memory retrieval")
+            return ""
+
         logger.info(f"Retrieving memories for query: {query!r}")
         raw_hits = self.memory.search(
             query,
@@ -141,7 +148,9 @@ class MemoryManager:
         """
         threads = self._load_threads()
         if thread_id not in threads:
-            threads[thread_id] = {"user_id": user_id, "messages": []}
+            # The first user message becomes the provisional title
+            title = content.strip()[:60] if role == "user" else "Conversation"
+            threads[thread_id] = {"user_id": user_id, "messages": [], "title": title}
         threads[thread_id]["messages"].append(
             {
                 "role": role,
@@ -161,9 +170,30 @@ class MemoryManager:
             return thread["messages"]
         return None
 
-    def list_threads(self, user_id: str) -> List[str]:
+    def list_threads(self, user_id: str) -> List[Dict[str, str]]:
         """
-        List all thread IDs for a given user_id.
+        Return a list of dicts with ``id`` and ``title`` for all threads that
+        belong to *user_id*.
         """
         threads = self._load_threads()
-        return [tid for tid, t in threads.items() if t.get("user_id") == user_id]
+        out: list[dict[str, str]] = []
+        for tid, t in threads.items():
+            if t.get("user_id") == user_id:
+                out.append({"id": tid, "title": t.get("title", tid[:8])})
+        # show most-recent threads first (based on last message timestamp)
+        out.sort(key=lambda x: self.get_thread(x["id"])[-1]["timestamp"], reverse=True)  # type: ignore[arg-type]
+        return out
+
+    def rename_thread(self, thread_id: str, user_id: str, new_title: str) -> bool:
+        """
+        Rename an existing thread. Returns *True* when successful.
+        """
+        new_title = new_title.strip()
+        if not new_title:
+            return False
+        threads = self._load_threads()
+        if thread_id in threads and threads[thread_id].get("user_id") == user_id:
+            threads[thread_id]["title"] = new_title[:60]
+            self._save_threads(threads)
+            return True
+        return False
