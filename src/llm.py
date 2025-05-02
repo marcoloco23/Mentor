@@ -6,6 +6,7 @@ from openai import OpenAI
 import logging
 from typing import Any, Optional, List, Dict
 
+MODEL = "gpt-4.1"
 SYSTEM_TEMPLATE = """You are \"Mentor\", a seasoned coach who helps the user grow.
 You have access to stored memories:
 
@@ -46,7 +47,7 @@ class LLMClient:
             messages.extend(thread)
         messages.append({"role": "user", "content": user_msg})
         resp = self.llm.chat.completions.create(
-            model="gpt-4o-mini", messages=messages, temperature=0.7
+            model=MODEL, messages=messages, temperature=0.7
         )
         logger.info("LLM chat completion received")
         return resp.choices[0].message.content.strip()
@@ -67,7 +68,7 @@ class LLMClient:
             messages.extend(thread)
         messages.append({"role": "user", "content": user_msg})
         stream = self.llm.chat.completions.create(
-            model="gpt-4o-mini", messages=messages, temperature=0.7, stream=True
+            model=MODEL, messages=messages, temperature=0.7, stream=True
         )
         for chunk in stream:
             content = chunk.choices[0].delta.content
