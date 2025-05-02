@@ -1,5 +1,3 @@
-
-
 # 🧑‍🏫 Mentor – Your Personal AI Coach
 
 Mentor is a conversational AI that **remembers what matters** and guides you with direct, no‑fluff advice.  
@@ -10,20 +8,31 @@ Think of it as a seasoned mentor who interviews you, learns your goals, and asks
 ## ✨ Vision
 
 1. **Long‑term relationship** – Mentor builds an evolving knowledge base about *you*: your goals, preferences, and past decisions.  
-2. **Socratic guidance** – It doesn’t lecture; it probes. Mentor asks questions that surface blind spots and spark self‑reflection.  
+2. **Socratic guidance** – It doesn't lecture; it probes. Mentor asks questions that surface blind spots and spark self‑reflection.  
 3. **Actionable insight** – Each answer is concise, specific, and backed by the context it has stored—not generic self‑help jargon.  
 4. **Privacy & control** – All memories live in a dedicated memory layer (Mem0). You can inspect, export, or delete them at any time.
 
 ---
 
+## 📑 Table of Contents
+
+- [Architecture](#-architecture)
+- [Quickstart](#-quickstart)
+- [Key Files](#-key-files)
+- [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+---
+
 ## 🔧 Architecture
 
-| Layer | Tech | Purpose |
-|-------|------|---------|
-| **UI** | Streamlit | Lightweight chat front‑end with token streaming |
-| **Agent** | `Mentor` class | Orchestrates retrieval → LLM → async store |
-| **Memory** | Mem0 | Vector + metadata store for long‑term memories |
-| **LLM** | OpenAI GPT‑4o‑mini (pluggable) | Generates and streams responses |
+| Layer      | Tech                              | Purpose                                             |
+|------------|-----------------------------------|-----------------------------------------------------|
+| **UI**     | Streamlit                         | Lightweight chat front‑end with token streaming      |
+| **Agent**  | `Mentor` class                    | Orchestrates retrieval → LLM → async store          |
+| **Memory** | Mem0                              | Vector + metadata store for long‑term memories       |
+| **LLM**    | OpenAI GPT‑4o‑mini (pluggable)    | Generates and streams responses                     |
 
 > **Flow per turn**
 > 1. Retrieve top memories `k=5` (recency‑weighted, deduped)  
@@ -39,32 +48,32 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Set the following env vars (see `.env.example`):
+Set the following environment variables (see `.env.example`):
 
-```
+```env
 OPENAI_API_KEY=sk-…
-MEM0_API_KEY=mem_…
+MEM0_API_KEY=mem-…
 ```
 
 ---
 
 ## 📚 Key Files
 
-| Path | Description |
-|------|-------------|
-| `src/mentor.py` | Core agent logic and streaming helper |
-| `src/memory.py` | Retrieval, re‑ranking, async persistence |
-| `src/llm.py` | Thin wrapper around the OpenAI client |
-| `app.py` | Streamlit UI |
+| Path              | Description                          |
+|-------------------|--------------------------------------|
+| `src/mentor.py`   | Core agent logic and streaming helper |
+| `src/memory.py`   | Retrieval, re‑ranking, async persistence |
+| `src/llm.py`      | Thin wrapper around the OpenAI client |
+| `app.py`          | Streamlit UI                         |
 
 ---
 
 ## 🗺️ Roadmap
 
-- **Multi‑user auth** with secure per‑user key management  
-- **Scheduled reflections**: daily/weekly check‑ins driven by stored goals  
-- **Voice mode** using WebRTC + Whisper real‑time transcription  
-- **Plugin hooks** for calendar, tasks, or custom knowledge bases  
+- **Multi‑user auth** with secure per‑user key management
+- **Scheduled reflections**: daily/weekly check‑ins driven by stored goals
+- **Voice mode** using WebRTC + Whisper real‑time transcription
+- **Plugin hooks** for calendar, tasks, or custom knowledge bases
 
 ---
 
@@ -78,6 +87,8 @@ MEM0_API_KEY=mem_…
 
 ## 📝 License
 
-MIT — see `LICENSE`.
+MIT — see [`LICENSE`](LICENSE).
+
+---
 
 *Crafted with curiosity and a dash of Socratic questioning.*

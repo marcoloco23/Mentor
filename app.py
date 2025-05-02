@@ -46,10 +46,21 @@ titles = list(title_to_id.keys())
 conv_selection = st.sidebar.selectbox(
     "💬 Conversations",
     options=["➕   New Conversation"] + titles,
-    index=0 if st.session_state.current_thread_id is None else titles.index(
-        next((t for t, i in title_to_id.items() if i == st.session_state.current_thread_id), titles[0])
-    )
-    + 1,
+    index=(
+        0
+        if st.session_state.current_thread_id is None
+        else titles.index(
+            next(
+                (
+                    t
+                    for t, i in title_to_id.items()
+                    if i == st.session_state.current_thread_id
+                ),
+                titles[0],
+            )
+        )
+        + 1
+    ),
     key="thread_selectbox",
 )
 
