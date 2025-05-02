@@ -29,6 +29,33 @@ Mentor is a conversational AI that **remembers what matters** and guides you wit
 
 ---
 
+## 🚀 Mobile App & API Quickstart
+
+### Prerequisites
+- Node.js (v18+ recommended)
+- Python 3.11+
+- [Expo CLI](https://docs.expo.dev/get-started/installation/) (install with `npm install -g expo-cli`)
+- (For iOS simulator) Xcode, or Expo Go app for physical device
+
+### 1. Backend API (FastAPI)
+
+```sh
+uvicorn main:app --reload
+```
+- The API will be available at `http://localhost:8000`.
+
+### 2. Mobile App (Expo/React Native)
+
+```sh
+cd mentor-mobile
+npm install
+npx expo start
+```
+- Press `i` to launch the iOS simulator, or scan the QR code with Expo Go on your device.
+- The app will connect to the backend at `http://localhost:8000` by default (see `src/api/mentorApi.ts`).
+
+---
+
 ## 🚀 Quickstart
 
 ```bash
