@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mentor-mobile",
-    "slug": "mentor-mobile",
+    "name": "mentor",
+    "slug": "mentor",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

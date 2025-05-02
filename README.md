@@ -47,7 +47,7 @@ uvicorn main:app --reload
 ### 2. Mobile App (Expo/React Native)
 
 ```sh
-cd mentor-mobile
+cd mobile
 npm install
 npx expo start
 ```
