@@ -24,7 +24,7 @@ Mentor is a conversational AI that **remembers what matters** and guides you wit
 - **Socratic guidance:** Asks questions that surface blind spots and spark self-reflection.
 - **Actionable insight:** Each answer is concise, specific, and backed by context—not generic self-help jargon.
 - **Privacy & control:** All memories live in a dedicated memory layer (Mem0). You can inspect, export, or delete them at any time.
-- **Pluggable LLM:** Uses OpenAI GPT-4o-mini by default, but is easily extensible.
+- **Pluggable LLM:** Uses OpenAI GPT-4.1 by default, but is easily extensible.
 - **Modern UI:** Streamlit-based, with token streaming for a responsive chat experience.
 
 ---
@@ -52,7 +52,7 @@ MEM0_API_KEY=mem-…
 | **UI**     | Streamlit                         | Lightweight chat front‑end with token streaming      |
 | **Agent**  | `Mentor` class                    | Orchestrates retrieval → LLM → async store          |
 | **Memory** | Mem0                              | Vector + metadata store for long‑term memories       |
-| **LLM**    | OpenAI GPT‑4o‑mini (pluggable)    | Generates and streams responses                     |
+| **LLM**    | OpenAI GPT‑4.1 (pluggable)    | Generates and streams responses                     |
 
 > **Flow per turn:**
 > 1. Retrieve top memories `k=5` (recency‑weighted, deduped)
