@@ -1,0 +1,42 @@
+{
+  "502fc84a-2d2e-4186-be51-73870403750a": {
+    "user_id": "u42",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Hey my name is marc",
+        "timestamp": "2025-05-02T14:13:32.361677+00:00"
+      },
+      {
+        "role": "assistant",
+        "content": "Hi Marc! It's great to meet you. What brings you here today?",
+        "timestamp": "2025-05-02T14:13:32.362357+00:00"
+      }
+    ]
+  },
+  "2ca78d0b-9a04-4b7e-9424-5bf64fcd916d": {
+    "user_id": "u42",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Whats my name?",
+        "timestamp": "2025-05-02T14:13:43.729830+00:00"
+      },
+      {
+        "role": "assistant",
+        "content": "Your name is Marc. How are you feeling today?",
+        "timestamp": "2025-05-02T14:13:43.731114+00:00"
+      },
+      {
+        "role": "user",
+        "content": "Im good thanks",
+        "timestamp": "2025-05-02T14:14:01.050909+00:00"
+      },
+      {
+        "role": "assistant",
+        "content": "Glad to hear that! What’s been on your mind lately? Any new ideas or projects in physics you’re exploring?",
+        "timestamp": "2025-05-02T14:14:01.051790+00:00"
+      }
+    ]
+  }
+}

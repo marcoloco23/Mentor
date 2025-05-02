@@ -8,12 +8,17 @@ from datetime import UTC, datetime, timezone
 from zoneinfo import ZoneInfo
 import re
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, List, Dict
+import json
+import os
+from threading import Lock
 
 USER_TZ = ZoneInfo("Europe/Berlin")
 RECENCY_HALFLIFE_DAYS = 30
 _MIN_SIMILARITY = 0.45
 _DUPLICATE_REGEX = re.compile(r"\W+")
+THREADS_FILE = os.path.join(os.path.dirname(__file__), "threads.json")
+_threads_lock = Lock()
 
 logger = logging.getLogger("MentorMemory")
 
@@ -103,3 +108,62 @@ class MemoryManager:
             metadata={"ts": datetime.now(UTC).isoformat()},
         )
         logger.info("Conversation stored successfully")
+
+    def _load_threads(self) -> dict:
+        """
+        Load all threads from the local JSON file.
+        """
+        if not os.path.exists(THREADS_FILE):
+            return {}
+        with _threads_lock, open(THREADS_FILE, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except Exception:
+                return {}
+
+    def _save_threads(self, threads: dict) -> None:
+        """
+        Save all threads to the local JSON file.
+        """
+        with _threads_lock, open(THREADS_FILE, "w", encoding="utf-8") as f:
+            json.dump(threads, f, ensure_ascii=False, indent=2)
+
+    def append_to_thread(
+        self,
+        thread_id: str,
+        user_id: str,
+        role: str,
+        content: str,
+        timestamp: Optional[str] = None,
+    ) -> None:
+        """
+        Append a message to a thread, creating the thread if it does not exist.
+        """
+        threads = self._load_threads()
+        if thread_id not in threads:
+            threads[thread_id] = {"user_id": user_id, "messages": []}
+        threads[thread_id]["messages"].append(
+            {
+                "role": role,
+                "content": content,
+                "timestamp": timestamp or datetime.now(UTC).isoformat(),
+            }
+        )
+        self._save_threads(threads)
+
+    def get_thread(self, thread_id: str) -> Optional[List[Dict[str, Any]]]:
+        """
+        Retrieve all messages in a thread by thread_id.
+        """
+        threads = self._load_threads()
+        thread = threads.get(thread_id)
+        if thread:
+            return thread["messages"]
+        return None
+
+    def list_threads(self, user_id: str) -> List[str]:
+        """
+        List all thread IDs for a given user_id.
+        """
+        threads = self._load_threads()
+        return [tid for tid, t in threads.items() if t.get("user_id") == user_id]

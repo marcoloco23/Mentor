@@ -4,7 +4,7 @@ Encapsulates LLM chat logic for the Mentor agent.
 
 from openai import OpenAI
 import logging
-from typing import Any
+from typing import Any, Optional, List, Dict
 
 SYSTEM_TEMPLATE = """You are \"Mentor\", a seasoned coach who helps the user grow.
 You have access to stored memories:
@@ -30,32 +30,42 @@ class LLMClient:
     def __init__(self, llm_client: OpenAI):
         self.llm = llm_client
 
-    def chat(self, user_msg: str, mem_text: str) -> str:
+    def chat(
+        self,
+        user_msg: str,
+        mem_text: str,
+        thread: Optional[List[Dict[str, Any]]] = None,
+    ) -> str:
         """
-        Generate a reply using the LLM, given the user message and memory text.
+        Generate a reply using the LLM, given the user message, memory text, and optional thread history.
         """
         logger.info("Invoking LLM chat completion")
         prompt = SYSTEM_TEMPLATE.format(memories=mem_text)
-        messages = [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": user_msg},
-        ]
+        messages = [{"role": "system", "content": prompt}]
+        if thread:
+            messages.extend(thread)
+        messages.append({"role": "user", "content": user_msg})
         resp = self.llm.chat.completions.create(
             model="gpt-4o-mini", messages=messages, temperature=0.7
         )
         logger.info("LLM chat completion received")
         return resp.choices[0].message.content.strip()
 
-    def chat_stream(self, user_msg: str, mem_text: str):
+    def chat_stream(
+        self,
+        user_msg: str,
+        mem_text: str,
+        thread: Optional[List[Dict[str, Any]]] = None,
+    ):
         """
-        Stream a reply using the LLM, yielding tokens as they arrive.
+        Stream a reply using the LLM, yielding tokens as they arrive. Optionally include thread history.
         """
         logger.info("Invoking LLM chat completion (streaming)")
         prompt = SYSTEM_TEMPLATE.format(memories=mem_text)
-        messages = [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": user_msg},
-        ]
+        messages = [{"role": "system", "content": prompt}]
+        if thread:
+            messages.extend(thread)
+        messages.append({"role": "user", "content": user_msg})
         stream = self.llm.chat.completions.create(
             model="gpt-4o-mini", messages=messages, temperature=0.7, stream=True
         )
