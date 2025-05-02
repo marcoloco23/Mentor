@@ -1,5 +1,5 @@
 """
-app.py – Streamlit chat wrapper for Mentor
+Streamlit chat wrapper for Mentor
 Run with:  streamlit run app.py
 """
 
@@ -8,7 +8,7 @@ from __future__ import annotations
 import uuid
 
 import streamlit as st
-from src.boot import memory_manager, llm_client  # <-- your existing wiring
+from src.boot import memory_manager, llm_client
 from src.mentor import Mentor
 
 # ---------------------------------------------------------------------------

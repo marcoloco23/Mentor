@@ -1,5 +1,6 @@
 """
 Encapsulates LLM chat logic for the Mentor agent.
+Provides an LLMClient class for generating and streaming chat completions using an LLM backend.
 """
 
 from openai import OpenAI
@@ -26,9 +27,18 @@ logger = logging.getLogger("MentorLLM")
 class LLMClient:
     """
     Handles LLM chat completions for the Mentor agent.
+
+    Attributes:
+        llm (OpenAI): The OpenAI client instance for chat completions.
     """
 
     def __init__(self, llm_client: OpenAI):
+        """
+        Initialize the LLMClient.
+
+        Args:
+            llm_client (OpenAI): The OpenAI client instance.
+        """
         self.llm = llm_client
 
     def chat(
@@ -39,6 +49,14 @@ class LLMClient:
     ) -> str:
         """
         Generate a reply using the LLM, given the user message, memory text, and optional thread history.
+
+        Args:
+            user_msg (str): The user's message.
+            mem_text (str): The formatted memory text to provide as context.
+            thread (Optional[List[Dict[str, Any]]], optional): Optional conversation thread history.
+
+        Returns:
+            str: The assistant's reply.
         """
         logger.info("Invoking LLM chat completion")
         prompt = SYSTEM_TEMPLATE.format(memories=mem_text)
@@ -60,6 +78,14 @@ class LLMClient:
     ):
         """
         Stream a reply using the LLM, yielding tokens as they arrive. Optionally include thread history.
+
+        Args:
+            user_msg (str): The user's message.
+            mem_text (str): The formatted memory text to provide as context.
+            thread (Optional[List[Dict[str, Any]]], optional): Optional conversation thread history.
+
+        Yields:
+            str: The next token in the assistant's reply.
         """
         logger.info("Invoking LLM chat completion (streaming)")
         prompt = SYSTEM_TEMPLATE.format(memories=mem_text)

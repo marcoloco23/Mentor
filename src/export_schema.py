@@ -1,11 +1,27 @@
-# export_schema.py  – build a schema dict for Mem0’s /v1/exports endpoint
+"""
+Defines the schema for exporting Mentor memory records to Mem0's /v1/exports endpoint.
+Provides a MentorMemory Pydantic model and a JSON schema for export.
+"""
+
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 
 
 class MentorMemory(BaseModel):
-    """Shape of a single memory record we want in the CSV/JSON export."""
+    """
+    Pydantic model representing the shape of a single memory record for export.
+
+    Attributes:
+        id (str): Unique identifier for the memory record.
+        user_id (str): Identifier for the user who owns the memory.
+        memory (str): Canonical fact or statement.
+        created_at (datetime): Timestamp when the memory was created.
+        updated_at (datetime): Timestamp when the memory was last updated.
+        categories (Optional[List[str]]): Optional list of categories for the memory.
+        metadata (Optional[Dict[str, Any]]): Optional metadata dictionary.
+        score (Optional[float]): Optional similarity/retrieval score if returned by Mem0 search.
+    """
 
     id: str
     user_id: str

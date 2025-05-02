@@ -24,6 +24,14 @@ def _log_when_done(fut: Future) -> None:
 class Mentor:
     """
     Mentor agent for coaching, using memory and LLM modules.
+
+    Attributes:
+        memory (MemoryManager): The memory manager instance for retrieval and storage.
+        llm (LLMClient): The LLM client for generating responses.
+        user_id (str): The user identifier.
+        agent_id (str): The agent identifier (default: 'mentor').
+        k (int): Number of memories to retrieve (default: 5).
+        version (str): Version identifier for memory retrieval.
     """
 
     def __init__(
@@ -34,6 +42,16 @@ class Mentor:
         agent_id: str = "mentor",
         k: int = 5,
     ):
+        """
+        Initialize the Mentor agent.
+
+        Args:
+            memory (MemoryManager): The memory manager instance.
+            llm (LLMClient): The LLM client instance.
+            user_id (str): The user identifier.
+            agent_id (str, optional): The agent identifier. Defaults to 'mentor'.
+            k (int, optional): Number of memories to retrieve. Defaults to 5.
+        """
         self.memory = memory
         self.llm = llm
         self.user_id = user_id
@@ -47,7 +65,13 @@ class Mentor:
     def __call__(self, user_msg: str, thread_id: Optional[str] = None) -> str:
         """
         Generate a reply and store the conversation in memory and thread history.
-        If thread_id is not provided, a new thread is started.
+
+        Args:
+            user_msg (str): The user's message.
+            thread_id (Optional[str], optional): The thread identifier. If not provided, a new thread is started.
+
+        Returns:
+            str: The assistant's reply.
         """
         logger.info(f"Received user message: {user_msg}")
         if thread_id is None:
@@ -63,8 +87,14 @@ class Mentor:
 
     def stream_reply(self, user_msg: str, thread_id: Optional[str] = None):
         """
-        Yields reply tokens as they arrive; stores conversation in thread history.
-        If thread_id is not provided, a new thread is started.
+        Yield reply tokens as they arrive and store the conversation in thread history.
+
+        Args:
+            user_msg (str): The user's message.
+            thread_id (Optional[str], optional): The thread identifier. If not provided, a new thread is started.
+
+        Yields:
+            str: The next token in the assistant's reply.
         """
         logger.info(f"Streaming reply for: {user_msg!r}")
         if thread_id is None:

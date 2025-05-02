@@ -1,4 +1,8 @@
-# mentor/boot.py
+"""
+Initializes and wires up the core dependencies for the Mentor agent, including memory and LLM clients.
+This module is intended to be imported by entry points to provide ready-to-use, preconfigured components.
+"""
+
 from mem0 import MemoryClient
 from openai import OpenAI
 import os, dotenv, logging
@@ -13,9 +17,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("MentorBoot")
 
-mem0 = MemoryClient(
-    os.environ["MEM0_API_KEY"]
-)  # ⟵ docs example [oai_citation:0‡docs.mem0.ai](https://docs.mem0.ai/platform/quickstart)
+mem0 = MemoryClient(os.environ["MEM0_API_KEY"])
 logger.info("Initialized MemoryClient (mem0)")
 openai = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 logger.info("Initialized OpenAI client")
