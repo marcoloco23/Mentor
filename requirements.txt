@@ -1,0 +1,4 @@
+mem0ai
+openai
+dotenv
+black
