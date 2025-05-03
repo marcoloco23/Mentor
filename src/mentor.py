@@ -39,7 +39,7 @@ class Mentor:
         memory: MemoryManager,
         llm: LLMClient,
         user_id: str,
-        agent_id: str = "mentor",
+        agent_id: str = "mentor",  # TODO: Each user needs their own mentor so agent id needs to be unique
         k: int = 5,
     ):
         """
