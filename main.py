@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from src.boot import memory_manager, llm_client
 from src.mentor import Mentor
+import json
 
 app = FastAPI()
 
@@ -42,9 +43,9 @@ class ChatLogMessage(BaseModel):
 
 def sse_format(data: str) -> str:
     """
-    Formats a string as a Server-Sent Event (SSE) data message.
+    Wrap each chunk in JSON so leading spaces survive the SSE parser.
     """
-    return f"data: {data}\n\n"
+    return f"data:{json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 async def stream_response(message: str) -> AsyncGenerator[str, None]:
@@ -90,6 +91,7 @@ async def chat_stream(request: Request):
         async def mentor_stream():
             for token in mentor.stream_reply(message, thread_id=thread_id):
                 yield sse_format(token)
+                await asyncio.sleep(0)  # let uvicorn flush immediately
             yield sse_format("[END]")
 
         return StreamingResponse(mentor_stream(), media_type="text/event-stream")

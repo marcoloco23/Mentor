@@ -1,4 +1,5 @@
 import axios from 'axios';
+import EventSource from 'react-native-sse';
 
 /**
  * Type definition for chat request payload.
@@ -44,29 +45,30 @@ export async function streamMessage(
   payload: ChatRequest,
   onChunk: (chunk: string) => void
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/chat/stream`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!response.body) throw new Error('No response body');
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder('utf-8');
-  let buffer = '';
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let lines = buffer.split('\n\n');
-    buffer = lines.pop() || '';
-    for (const line of lines) {
-      if (line.startsWith('data: ')) {
-        const chunk = line.replace('data: ', '');
-        if (chunk === '[END]') return;
+  return new Promise((resolve, reject) => {
+    const es = new EventSource(`${API_BASE_URL}/chat/stream`, {
+      pollingInterval: 0, // true server-push
+      headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    es.addEventListener('message', (event: any) => {
+      const raw = event.data as string;
+      const chunk = JSON.parse(raw); // decode to preserve leading spaces
+      if (chunk === '[END]') {
+        es.close();
+        resolve();
+      } else {
         onChunk(chunk);
       }
-    }
-  }
+    });
+
+    es.addEventListener('error', (err: any) => {
+      es.close();
+      reject(err);
+    });
+  });
 }
 
 export async function getChatLog(): Promise<ChatLogMessage[]> {
