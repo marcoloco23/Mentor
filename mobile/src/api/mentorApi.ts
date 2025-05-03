@@ -17,6 +17,12 @@ export interface ChatResponse {
   data?: unknown;
 }
 
+export interface ChatLogMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
 const API_BASE_URL = 'http://localhost:8000'; // Update as needed
 
 /**
@@ -61,4 +67,9 @@ export async function streamMessage(
       }
     }
   }
+}
+
+export async function getChatLog(): Promise<ChatLogMessage[]> {
+  const res = await axios.get<ChatLogMessage[]>(`${API_BASE_URL}/chatlog`);
+  return res.data;
 }

@@ -5,7 +5,7 @@ FastAPI backend for Mentor mobile app.
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncGenerator, List, Dict
 import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -32,6 +32,12 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     data: Any = None
+
+
+class ChatLogMessage(BaseModel):
+    role: str
+    content: str
+    timestamp: str
 
 
 def sse_format(data: str) -> str:
@@ -87,3 +93,12 @@ async def chat_stream(request: Request):
             yield sse_format("[END]")
 
         return StreamingResponse(mentor_stream(), media_type="text/event-stream")
+
+
+@app.get("/chatlog", response_model=List[ChatLogMessage])
+def chatlog_endpoint() -> List[ChatLogMessage]:
+    """
+    Returns the recent chat log for the current user (u42).
+    """
+    # TODO: Replace 'u42' with real user_id from auth/session
+    return memory_manager.fetch_recent("u42")

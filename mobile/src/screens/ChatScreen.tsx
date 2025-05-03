@@ -11,7 +11,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { TextInput, IconButton, Text, Switch } from 'react-native-paper';
-import { streamMessage } from '../api/mentorApi';
+import { streamMessage, getChatLog, ChatLogMessage } from '../api/mentorApi';
 
 interface Message {
   id: string;
@@ -42,6 +42,24 @@ const ChatScreen: React.FC = () => {
     );
 
   useEffect(scrollToEnd, [messages]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const log: ChatLogMessage[] = await getChatLog();
+        setMessages(
+          log.map((m, i) => ({
+            id: `${i}-${m.role}`,
+            role: m.role,
+            text: m.content,
+            ts: new Date(m.timestamp).getTime(),
+          }))
+        );
+      } catch (e) {
+        // Optionally handle error
+      }
+    })();
+  }, []);
 
   /*────────────────── send & stream ──────────────────*/
   const doSend = async () => {

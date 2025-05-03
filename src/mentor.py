@@ -77,11 +77,11 @@ class Mentor:
         if thread_id is None:
             thread_id = str(uuid.uuid4())
         mem_text = self.memory.retrieve(user_msg, self.user_id, self.k, self.version)
-        thread = self.memory.get_thread(thread_id) or []
-        reply = self.llm.chat(user_msg, mem_text, thread=thread)
+        recent = self.memory.fetch_recent(self.user_id)
+        reply = self.llm.chat(user_msg, mem_text, thread=recent)
         self.memory.store(user_msg, reply, self.user_id, self.agent_id)
-        self.memory.append_to_thread(thread_id, self.user_id, "user", user_msg)
-        self.memory.append_to_thread(thread_id, self.user_id, "assistant", reply)
+        self.memory.append_message(self.user_id, "user", user_msg)
+        self.memory.append_message(self.user_id, "assistant", reply)
         logger.info(f"Generated reply: {reply}")
         return reply
 
@@ -100,9 +100,9 @@ class Mentor:
         if thread_id is None:
             thread_id = str(uuid.uuid4())
         mem_text = self.memory.retrieve(user_msg, self.user_id, self.k, self.version)
-        thread = self.memory.get_thread(thread_id) or []
+        recent = self.memory.fetch_recent(self.user_id)
         chunks = []
-        for token in self.llm.chat_stream(user_msg, mem_text, thread=thread):
+        for token in self.llm.chat_stream(user_msg, mem_text, thread=recent):
             chunks.append(token)
             yield token
         full_reply = "".join(chunks).strip()
@@ -114,6 +114,6 @@ class Mentor:
             self.agent_id,
         )
         fut.add_done_callback(_log_when_done)
-        self.memory.append_to_thread(thread_id, self.user_id, "user", user_msg)
-        self.memory.append_to_thread(thread_id, self.user_id, "assistant", full_reply)
+        self.memory.append_message(self.user_id, "user", user_msg)
+        self.memory.append_message(self.user_id, "assistant", full_reply)
         logger.info("Reply streamed; memory.store() dispatched in background")

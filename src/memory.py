@@ -18,8 +18,9 @@ USER_TZ = ZoneInfo("Europe/Berlin")
 RECENCY_HALFLIFE_DAYS = 30
 _MIN_SIMILARITY = 0.45
 _DUPLICATE_REGEX = re.compile(r"\W+")
-THREADS_FILE = "data/threads.json"
-_threads_lock = Lock()
+WINDOW_MESSAGES = 20  # static tail you feed to the LLM
+LOG_FILE = "data/chatlog.json"
+_log_lock = Lock()
 
 logger = logging.getLogger("MentorMemory")
 
@@ -139,114 +140,45 @@ class MemoryManager:
         )
         logger.info("Conversation stored successfully")
 
-    def _load_threads(self) -> dict:
-        """
-        Load all threads from the local JSON file.
-
-        Returns:
-            dict: Dictionary of all threads.
-        """
-        if not os.path.exists(THREADS_FILE):
+    # ──────────────────────────────────────────────────────────
+    #  Single-log storage  (one list per user_id)              │
+    # ──────────────────────────────────────────────────────────
+    def _load_log(self) -> dict:
+        if not os.path.exists(LOG_FILE):
             return {}
-        with _threads_lock, open(THREADS_FILE, "r", encoding="utf-8") as f:
+        with _log_lock, open(LOG_FILE, "r", encoding="utf-8") as f:
             try:
                 return json.load(f)
             except Exception:
                 return {}
 
-    def _save_threads(self, threads: dict) -> None:
-        """
-        Save all threads to the local JSON file.
+    def _save_log(self, data: dict) -> None:
+        with _log_lock, open(LOG_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
 
-        Args:
-            threads (dict): Dictionary of threads to save.
-        """
-        with _threads_lock, open(THREADS_FILE, "w", encoding="utf-8") as f:
-            json.dump(threads, f, ensure_ascii=False, indent=2)
-
-    def append_to_thread(
+    def append_message(
         self,
-        thread_id: str,
         user_id: str,
         role: str,
         content: str,
-        timestamp: Optional[str] = None,
+        ts: Optional[str] = None,
     ) -> None:
-        """
-        Append a message to a thread, creating the thread if it does not exist.
-
-        Args:
-            thread_id (str): The thread identifier.
-            user_id (str): The user identifier.
-            role (str): The role of the message sender ('user' or 'assistant').
-            content (str): The message content.
-            timestamp (Optional[str], optional): The message timestamp. Defaults to current UTC time if not provided.
-        """
-        threads = self._load_threads()
-        if thread_id not in threads:
-            title = content.strip()[:60] if role == "user" else "Conversation"
-            threads[thread_id] = {"user_id": user_id, "messages": [], "title": title}
-        threads[thread_id]["messages"].append(
+        """Store one message in the single-user log."""
+        data = self._load_log()
+        data.setdefault(user_id, []).append(
             {
                 "role": role,
                 "content": content,
-                "timestamp": timestamp or datetime.now(UTC).isoformat(),
+                "timestamp": ts or datetime.now(UTC).isoformat(),
             }
         )
-        self._save_threads(threads)
+        # keep everything; we'll slice later
+        self._save_log(data)
 
-    def get_thread(self, thread_id: str) -> Optional[List[Dict[str, Any]]]:
-        """
-        Retrieve all messages in a thread by thread_id.
-
-        Args:
-            thread_id (str): The thread identifier.
-
-        Returns:
-            Optional[List[Dict[str, Any]]]: List of messages in the thread, or None if not found.
-        """
-        threads = self._load_threads()
-        thread = threads.get(thread_id)
-        if thread:
-            return thread["messages"]
-        return None
-
-    def list_threads(self, user_id: str) -> List[Dict[str, str]]:
-        """
-        Return a list of dicts with ``id`` and ``title`` for all threads that belong to *user_id*.
-
-        Args:
-            user_id (str): The user identifier.
-
-        Returns:
-            List[Dict[str, str]]: List of thread metadata dictionaries.
-        """
-        threads = self._load_threads()
-        out: list[dict[str, str]] = []
-        for tid, t in threads.items():
-            if t.get("user_id") == user_id:
-                out.append({"id": tid, "title": t.get("title", tid[:8])})
-        out.sort(key=lambda x: self.get_thread(x["id"])[-1]["timestamp"], reverse=True)
-        return out
-
-    def rename_thread(self, thread_id: str, user_id: str, new_title: str) -> bool:
-        """
-        Rename an existing thread.
-
-        Args:
-            thread_id (str): The thread identifier.
-            user_id (str): The user identifier.
-            new_title (str): The new title for the thread.
-
-        Returns:
-            bool: True if the thread was successfully renamed, False otherwise.
-        """
-        new_title = new_title.strip()
-        if not new_title:
-            return False
-        threads = self._load_threads()
-        if thread_id in threads and threads[thread_id].get("user_id") == user_id:
-            threads[thread_id]["title"] = new_title[:60]
-            self._save_threads(threads)
-            return True
-        return False
+    def fetch_recent(
+        self, user_id: str, k: int = WINDOW_MESSAGES
+    ) -> List[Dict[str, str]]:
+        """Return the *k* most-recent messages (oldest first)."""
+        data = self._load_log()
+        tail = data.get(user_id, [])[-k:]
+        return tail
