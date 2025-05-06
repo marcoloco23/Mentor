@@ -104,12 +104,6 @@ class Mentor:
             {"role": msg["role"], "content": msg["content"]} for msg in recent_messages
         ]
 
-        logger.info(f"Retrieved {len(llm_messages)} messages")
-        logger.info(llm_messages)
-        logger.info(mem_text)
-        logger.info(self.assistant_name)
-        logger.info(self.user_name)
-
         # Generate reply
         reply = self.llm.chat(
             user_msg=user_msg,
