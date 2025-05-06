@@ -2,10 +2,10 @@
 FastAPI backend for Mentor mobile app.
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Any, AsyncGenerator, List, Dict
+from typing import Any, AsyncGenerator, List, Dict, Optional
 import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -29,6 +29,7 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str
     thread_id: str | None = None
+    user_id: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -60,8 +61,23 @@ async def stream_response(message: str) -> AsyncGenerator[str, None]:
     yield sse_format("[END]")
 
 
-# Instantiate Mentor agent (fixed user_id for now)
-mentor = Mentor(memory_manager, llm_client, user_id=DEFAULT_USER_ID)
+# Create a dictionary to store mentor instances for different users
+mentor_instances = {}
+
+
+def get_mentor_for_user(user_id: str) -> Mentor:
+    """
+    Returns a Mentor instance for the given user_id, creating one if it doesn't exist.
+    """
+    if user_id not in mentor_instances:
+        mentor_instances[user_id] = Mentor(memory_manager, llm_client, user_id=user_id)
+    return mentor_instances[user_id]
+
+
+# Instantiate default Mentor agent
+mentor_instances[DEFAULT_USER_ID] = Mentor(
+    memory_manager, llm_client, user_id=DEFAULT_USER_ID
+)
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -80,6 +96,7 @@ async def chat_stream(request: Request):
     body = await request.json()
     message = body.get("message", "")
     thread_id = body.get("thread_id")
+    user_id = body.get("user_id", DEFAULT_USER_ID)
     # Respect test_mode from request, fallback to env
     test_mode = body.get("test_mode")
     # Use dummy streaming for testing
@@ -88,9 +105,12 @@ async def chat_stream(request: Request):
             stream_response(message), media_type="text/event-stream"
         )
     else:
+        # Get or create the mentor for this user
+        user_mentor = get_mentor_for_user(user_id)
+
         # Use real Mentor streaming
         async def mentor_stream():
-            for token in mentor.stream_reply(message, thread_id=thread_id):
+            for token in user_mentor.stream_reply(message, thread_id=thread_id):
                 yield sse_format(token)
                 await asyncio.sleep(0)  # let uvicorn flush immediately
             yield sse_format("[END]")
@@ -99,9 +119,10 @@ async def chat_stream(request: Request):
 
 
 @app.get("/chatlog", response_model=List[ChatLogMessage])
-def chatlog_endpoint() -> List[ChatLogMessage]:
+def chatlog_endpoint(user_id: Optional[str] = Query(None)) -> List[ChatLogMessage]:
     """
-    Returns the recent chat log for the current user (DEFAULT_USER_ID).
+    Returns the recent chat log for the specified user or DEFAULT_USER_ID if not specified.
     """
-    messages = memory_manager.fetch_recent(DEFAULT_USER_ID)
+    user = user_id if user_id else DEFAULT_USER_ID
+    messages = memory_manager.fetch_recent(user)
     return messages

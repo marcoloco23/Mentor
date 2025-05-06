@@ -9,6 +9,7 @@ export interface ChatRequest {
   message: string;
   thread_id?: string;
   test_mode?: boolean;
+  user_id?: string;
 }
 
 /**
@@ -46,6 +47,12 @@ export async function streamMessage(
   payload: ChatRequest,
   onChunk: (chunk: string) => void
 ): Promise<void> {
+  // Remove user_id if it's "default" to let backend use its default
+  if (payload.user_id === "default") {
+    const { user_id, ...cleanPayload } = payload;
+    payload = cleanPayload;
+  }
+
   return new Promise((resolve, reject) => {
     const es = new EventSource(`${API_BASE_URL}/chat/stream`, {
       pollingInterval: 0, // true server-push
@@ -72,7 +79,16 @@ export async function streamMessage(
   });
 }
 
-export async function getChatLog(): Promise<ChatLogMessage[]> {
-  const res = await axios.get<ChatLogMessage[]>(`${API_BASE_URL}/chatlog`);
+/**
+ * Gets chat log history from the backend.
+ * @param userId Optional user ID to retrieve specific user's chat logs
+ * @returns Array of chat log messages
+ */
+export async function getChatLog(userId?: string): Promise<ChatLogMessage[]> {
+  // Don't append user_id param if it's "default" or undefined
+  const url = userId && userId !== "default"
+    ? `${API_BASE_URL}/chatlog?user_id=${encodeURIComponent(userId)}`
+    : `${API_BASE_URL}/chatlog`;
+  const res = await axios.get<ChatLogMessage[]>(url);
   return res.data;
 }
