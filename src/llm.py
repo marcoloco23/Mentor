@@ -130,6 +130,10 @@ class LLMClient:
         if thread:
             messages.extend(thread)
         messages.append({"role": "user", "content": user_msg})
+
+        logger.info("Streaming LLM chat completion")
+        logger.info(messages)
+
         stream = self.llm.chat.completions.create(
             model=LLM_MODEL,
             messages=messages,

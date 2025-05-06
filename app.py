@@ -19,8 +19,6 @@ if "mentor" not in st.session_state:
     st.session_state.mentor = Mentor(
         memory_manager, llm_client, user_id=DEFAULT_USER_ID
     )
-if "current_thread_id" not in st.session_state:
-    st.session_state.current_thread_id: str | None = None
 if "history" not in st.session_state:
     st.session_state.history: list[tuple[str, str]] = []  # [(role, text), ...]
 
@@ -67,9 +65,7 @@ if prompt := st.chat_input("Ask your mentor…"):
 
     # get mentor reply
     with st.chat_message("assistant"):
-        response = st.write_stream(
-            mentor.stream_reply(prompt, thread_id=st.session_state.current_thread_id)
-        )
+        response = st.write_stream(mentor.stream_reply(prompt))
     st.session_state.history.append(("assistant", response))
 
     # Persist history for display without reload

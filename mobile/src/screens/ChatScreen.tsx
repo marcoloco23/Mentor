@@ -31,6 +31,9 @@ const USER_PROFILES = {
   user3: { name: 'Charlie', avatar: '🧑‍🔬' },
 };
 
+// Initial message to send when starting a new chat with no history
+const INITIAL_MESSAGE = "I’m here for you. Whenever you're ready, we’ll begin.";
+
 const ChatScreen: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -77,10 +80,37 @@ const ChatScreen: React.FC = () => {
           ts: new Date(m.timestamp).getTime(),
         }))
       );
+      
+      // If there are no messages for this user, send an initial message to start the conversation
+      if (log.length === 0) {
+        setTimeout(() => {
+          sendInitialMessage();
+        }, 500); // Small delay for better UX
+      }
     } catch (e) {
       console.error('Failed to fetch chat log:', e);
       alert('Failed to fetch chat log: ' + e);
     }
+  };
+
+  const sendInitialMessage = async () => {
+    if (typing) return;
+    
+    addMsg({ id: 'typing', role: 'typing', text: '...', ts: Date.now() });
+    setTyping(true);
+    
+    // Simulate typing delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.role === 'typing'
+          ? { id: Date.now() + '-a', role: 'assistant', text: INITIAL_MESSAGE, ts: Date.now() }
+          : m,
+      ),
+    );
+    
+    setTyping(false);
   };
 
   const switchUser = (newUserId: string) => {

@@ -64,16 +64,35 @@ class MemoryManager:
             logger.debug("Blank query – skipping memory retrieval")
             return ""
 
-        logger.info(f"Retrieving memories for query: {query!r}")
-        raw_hits = self.memory.search(
-            query,
-            version=version,
-            user_id=user_id,
-            keyword_search=True,
-            rerank=True,
-            filter_memories=False,
-            top_k=k * 3,
-        )
+        logger.info(f"Retrieving memories for query: {query!r} and user_id: {user_id}")
+
+        # For v2, we need to use proper filters structure as per documentation
+        if version == "v2":
+            # Create a proper filter structure to filter by user_id
+            filters = {"AND": [{"user_id": user_id}]}
+
+            raw_hits = self.memory.search(
+                query,
+                version=version,
+                filters=filters,
+                keyword_search=False,
+                rerank=True,
+                filter_memories=False,
+                top_k=k * 3,
+            )
+        else:
+            # For v1, keep the old format
+            raw_hits = self.memory.search(
+                query,
+                version=version,
+                user_id=user_id,
+                keyword_search=False,
+                rerank=True,
+                filter_memories=False,
+                top_k=k * 3,
+            )
+
+        logger.info(f"Retrieved {len(raw_hits)} raw hits from memory search")
         now_utc = datetime.now(timezone.utc)
 
         def score(hit: dict) -> float:
@@ -116,6 +135,7 @@ class MemoryManager:
             lines.append(date_hdr)
             for tm, txt in items:
                 lines.append(f"  • {tm} – {txt}")
+
         return "\n".join(lines)
 
     def store(
@@ -130,17 +150,24 @@ class MemoryManager:
             user_id (str): The user identifier.
             agent_id (str): The agent identifier.
         """
-        logger.info("Storing conversation to memory")
-        self.memory.add(
-            [
-                {"role": "user", "content": user_msg},
-                {"role": "assistant", "content": assistant_msg},
-            ],
-            user_id=user_id,
-            agent_id=agent_id,
-            metadata={"ts": datetime.now(UTC).isoformat()},
+        logger.info(
+            f"Storing conversation to memory for user_id: {user_id}, agent_id: {agent_id}"
         )
-        logger.info("Conversation stored successfully")
+
+        try:
+            self.memory.add(
+                [
+                    {"role": "user", "content": user_msg},
+                    {"role": "assistant", "content": assistant_msg},
+                ],
+                user_id=user_id,
+                agent_id=agent_id,
+                metadata={"ts": datetime.now(UTC).isoformat()},
+            )
+            logger.info("Conversation stored successfully")
+        except Exception as e:
+            logger.error(f"Failed to store conversation: {e}")
+            raise
 
     # ──────────────────────────────────────────────────────────
     #  Single-log storage  (one list per user_id)              │
@@ -166,6 +193,7 @@ class MemoryManager:
         ts: Optional[str] = None,
     ) -> None:
         """Store one message in the single-user log."""
+        logger.info(f"Appending message for user_id: {user_id}, role: {role}")
         data = self._load_log()
         data.setdefault(user_id, []).append(
             {
@@ -176,14 +204,18 @@ class MemoryManager:
         )
         # keep everything; we'll slice later
         self._save_log(data)
+        logger.debug(f"Message appended successfully for user_id: {user_id}")
 
     def fetch_recent(
         self, user_id: str, k: int = WINDOW_MESSAGES
     ) -> List[Dict[str, str]]:
         """Return the *k* most-recent messages (oldest first)."""
+        logger.info(f"Fetching {k} recent messages for user_id: {user_id}")
         data = self._load_log()
         messages = data.get(user_id, [])[-k:]
-        return [
+        logger.info(f"Found {len(messages)} messages for user_id: {user_id}")
+
+        result = [
             {
                 "role": msg["role"],
                 "content": msg["content"],
@@ -191,6 +223,7 @@ class MemoryManager:
             }
             for msg in messages
         ]
+        return result
 
     def format_recent_messages(self, user_id: str, k: int = WINDOW_MESSAGES) -> str:
         """

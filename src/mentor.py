@@ -83,20 +83,17 @@ class Mentor:
             f"Initialized Mentor for user_id={user_id}, agent_id={agent_id}, k={k}"
         )
 
-    def __call__(self, user_msg: str, thread_id: Optional[str] = None) -> str:
+    def __call__(self, user_msg: str) -> str:
         """
-        Generate a reply and store the conversation in memory and thread history.
+        Generate a reply and store the conversation in memory.
 
         Args:
             user_msg (str): The user's message.
-            thread_id (Optional[str], optional): The thread identifier. If not provided, a new thread is started.
 
         Returns:
             str: The assistant's reply.
         """
         logger.info(f"Received user message: {user_msg}")
-        if thread_id is None:
-            thread_id = str(uuid.uuid4())
 
         # Retrieve memories and format recent messages
         mem_text = self.memory.retrieve(user_msg, self.user_id, self.k, self.version)
@@ -106,6 +103,12 @@ class Mentor:
         llm_messages = [
             {"role": msg["role"], "content": msg["content"]} for msg in recent_messages
         ]
+
+        logger.info(f"Retrieved {len(llm_messages)} messages")
+        logger.info(llm_messages)
+        logger.info(mem_text)
+        logger.info(self.assistant_name)
+        logger.info(self.user_name)
 
         # Generate reply
         reply = self.llm.chat(
@@ -124,20 +127,17 @@ class Mentor:
         logger.info(f"Generated reply: {reply}")
         return reply
 
-    def stream_reply(self, user_msg: str, thread_id: Optional[str] = None):
+    def stream_reply(self, user_msg: str):
         """
-        Yield reply tokens as they arrive and store the conversation in thread history.
+        Yield reply tokens as they arrive and store the conversation in memory.
 
         Args:
             user_msg (str): The user's message.
-            thread_id (Optional[str], optional): The thread identifier. If not provided, a new thread is started.
 
         Yields:
             str: The next token in the assistant's reply.
         """
         logger.info(f"Streaming reply for: {user_msg!r}")
-        if thread_id is None:
-            thread_id = str(uuid.uuid4())
 
         # Retrieve memories and format recent messages
         mem_text = self.memory.retrieve(user_msg, self.user_id, self.k, self.version)

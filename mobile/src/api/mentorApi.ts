@@ -7,7 +7,6 @@ import { getApiBaseUrl } from '../utils/apiBaseUrl';
  */
 export interface ChatRequest {
   message: string;
-  thread_id?: string;
   test_mode?: boolean;
   user_id?: string;
 }
