@@ -1,5 +1,6 @@
 import axios from 'axios';
 import EventSource from 'react-native-sse';
+import { getApiBaseUrl } from '../utils/apiBaseUrl';
 
 /**
  * Type definition for chat request payload.
@@ -24,7 +25,7 @@ export interface ChatLogMessage {
   timestamp: string;
 }
 
-const API_BASE_URL = 'http://localhost:8000'; // Update as needed
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Sends a message to the Mentor backend chat endpoint.

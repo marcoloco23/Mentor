@@ -56,7 +56,8 @@ const ChatScreen: React.FC = () => {
           }))
         );
       } catch (e) {
-        // Optionally handle error
+        console.error('Failed to fetch chat log:', e);
+        alert('Failed to fetch chat log: ' + e);
       }
     })();
   }, []);
