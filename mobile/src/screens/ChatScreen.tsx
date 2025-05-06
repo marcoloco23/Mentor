@@ -20,6 +20,7 @@ import Composer from '../components/Composer';
 import type { Message } from '../components/ChatBubble';
 import { getTheme } from '../utils/theme';
 import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 
 const ChatScreen: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -156,9 +157,21 @@ const ChatScreen: React.FC = () => {
           <MessageList
             messages={messages}
             flatListRef={flatListRef}
-            onBubblePress={(msg) =>
-              navigator.clipboard && navigator.clipboard.writeText(msg.text)
-            }
+            onBubblePress={(msg) => {
+              if (Platform.OS === 'web' && navigator.clipboard) {
+                navigator.clipboard.writeText(msg.text);
+              } else {
+                Clipboard.setStringAsync(msg.text);
+              }
+            }}
+            onBubbleLongPress={async (msg) => {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              if (Platform.OS === 'web' && navigator.clipboard) {
+                navigator.clipboard.writeText(msg.text);
+              } else {
+                await Clipboard.setStringAsync(msg.text);
+              }
+            }}
           />
           <Composer
             value={input}

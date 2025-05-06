@@ -9,13 +9,16 @@ import uuid
 
 import streamlit as st
 from src.boot import memory_manager, llm_client
+from src.config import DEFAULT_USER_ID
 from src.mentor import Mentor
 
 # ---------------------------------------------------------------------------
 # Session initialisation
 # ---------------------------------------------------------------------------
 if "mentor" not in st.session_state:
-    st.session_state.mentor = Mentor(memory_manager, llm_client, user_id="u42")
+    st.session_state.mentor = Mentor(
+        memory_manager, llm_client, user_id=DEFAULT_USER_ID
+    )
 if "current_thread_id" not in st.session_state:
     st.session_state.current_thread_id: str | None = None
 if "history" not in st.session_state:

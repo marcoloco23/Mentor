@@ -10,6 +10,7 @@ export interface MessageListProps {
   messages: Message[];
   flatListRef?: RefObject<any>;
   onBubblePress?: (message: Message) => void;
+  onBubbleLongPress?: (message: Message) => void;
   panHandlers?: GestureResponderHandlers;
 }
 
@@ -20,6 +21,7 @@ const MessageList: React.FC<MessageListProps> = ({
   messages,
   flatListRef,
   onBubblePress,
+  onBubbleLongPress,
   panHandlers,
 }) => {
   const scheme = useColorScheme();
@@ -34,6 +36,7 @@ const MessageList: React.FC<MessageListProps> = ({
         <ChatBubble
           message={item}
           onPress={onBubblePress}
+          onLongPress={onBubbleLongPress}
         />
       )}
       contentContainerStyle={[

@@ -9,8 +9,19 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, Future
 import uuid
 
+from src.config import (
+    DEFAULT_AGENT_ID,
+    DEFAULT_MEMORIES_COUNT,
+    DEFAULT_VERSION,
+    MAX_THREAD_WORKERS,
+    ASSISTANT_NAME,
+    DEFAULT_USER_NAME,
+)
+
 logger = logging.getLogger("MentorAgent")
-_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="mentor-bg")
+_EXECUTOR = ThreadPoolExecutor(
+    max_workers=MAX_THREAD_WORKERS, thread_name_prefix="mentor-bg"
+)
 
 
 def _log_when_done(fut: Future) -> None:
@@ -29,9 +40,11 @@ class Mentor:
         memory (MemoryManager): The memory manager instance for retrieval and storage.
         llm (LLMClient): The LLM client for generating responses.
         user_id (str): The user identifier.
-        agent_id (str): The agent identifier (default: 'mentor').
-        k (int): Number of memories to retrieve (default: 5).
+        agent_id (str): The agent identifier.
+        k (int): Number of memories to retrieve.
         version (str): Version identifier for memory retrieval.
+        assistant_name (str): Name of the assistant.
+        user_name (str): Name of the user.
     """
 
     def __init__(
@@ -39,8 +52,11 @@ class Mentor:
         memory: MemoryManager,
         llm: LLMClient,
         user_id: str,
-        agent_id: str = "mentor",  # TODO: Each user needs their own mentor so agent id needs to be unique
-        k: int = 5,
+        agent_id: str = DEFAULT_AGENT_ID,
+        k: int = DEFAULT_MEMORIES_COUNT,
+        assistant_name: str = ASSISTANT_NAME,
+        user_name: str = DEFAULT_USER_NAME,
+        version: str = DEFAULT_VERSION,
     ):
         """
         Initialize the Mentor agent.
@@ -49,15 +65,20 @@ class Mentor:
             memory (MemoryManager): The memory manager instance.
             llm (LLMClient): The LLM client instance.
             user_id (str): The user identifier.
-            agent_id (str, optional): The agent identifier. Defaults to 'mentor'.
-            k (int, optional): Number of memories to retrieve. Defaults to 5.
+            agent_id (str, optional): The agent identifier. Defaults to DEFAULT_AGENT_ID.
+            k (int, optional): Number of memories to retrieve. Defaults to DEFAULT_MEMORIES_COUNT.
+            assistant_name (str, optional): Name of the assistant. Defaults to ASSISTANT_NAME.
+            user_name (str, optional): Name of the user. Defaults to DEFAULT_USER_NAME.
+            version (str, optional): Version identifier for memory retrieval. Defaults to DEFAULT_VERSION.
         """
         self.memory = memory
         self.llm = llm
         self.user_id = user_id
         self.agent_id = agent_id
         self.k = k
-        self.version = "v2"
+        self.version = version
+        self.assistant_name = assistant_name
+        self.user_name = user_name
         logger.info(
             f"Initialized Mentor for user_id={user_id}, agent_id={agent_id}, k={k}"
         )
@@ -76,12 +97,30 @@ class Mentor:
         logger.info(f"Received user message: {user_msg}")
         if thread_id is None:
             thread_id = str(uuid.uuid4())
+
+        # Retrieve memories and format recent messages
         mem_text = self.memory.retrieve(user_msg, self.user_id, self.k, self.version)
-        recent = self.memory.fetch_recent(self.user_id)
-        reply = self.llm.chat(user_msg, mem_text, thread=recent)
+        recent_messages = self.memory.fetch_recent(self.user_id)
+
+        # Filter out timestamps for LLM consumption
+        llm_messages = [
+            {"role": msg["role"], "content": msg["content"]} for msg in recent_messages
+        ]
+
+        # Generate reply
+        reply = self.llm.chat(
+            user_msg=user_msg,
+            mem_text=mem_text,
+            assistant_name=self.assistant_name,
+            user_name=self.user_name,
+            thread=llm_messages,
+        )
+
+        # Store conversation
         self.memory.store(user_msg, reply, self.user_id, self.agent_id)
         self.memory.append_message(self.user_id, "user", user_msg)
         self.memory.append_message(self.user_id, "assistant", reply)
+
         logger.info(f"Generated reply: {reply}")
         return reply
 
@@ -99,12 +138,29 @@ class Mentor:
         logger.info(f"Streaming reply for: {user_msg!r}")
         if thread_id is None:
             thread_id = str(uuid.uuid4())
+
+        # Retrieve memories and format recent messages
         mem_text = self.memory.retrieve(user_msg, self.user_id, self.k, self.version)
-        recent = self.memory.fetch_recent(self.user_id)
+        recent_messages = self.memory.fetch_recent(self.user_id)
+
+        # Filter out timestamps for LLM consumption
+        llm_messages = [
+            {"role": msg["role"], "content": msg["content"]} for msg in recent_messages
+        ]
+
+        # Stream reply
         chunks = []
-        for token in self.llm.chat_stream(user_msg, mem_text, thread=recent):
+        for token in self.llm.chat_stream(
+            user_msg=user_msg,
+            mem_text=mem_text,
+            assistant_name=self.assistant_name,
+            user_name=self.user_name,
+            thread=llm_messages,
+        ):
             chunks.append(token)
             yield token
+
+        # Store conversation
         full_reply = "".join(chunks).strip()
         fut = _EXECUTOR.submit(
             self.memory.store,
@@ -116,4 +172,5 @@ class Mentor:
         fut.add_done_callback(_log_when_done)
         self.memory.append_message(self.user_id, "user", user_msg)
         self.memory.append_message(self.user_id, "assistant", full_reply)
+
         logger.info("Reply streamed; memory.store() dispatched in background")

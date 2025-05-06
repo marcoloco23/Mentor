@@ -10,6 +10,7 @@ import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from src.boot import memory_manager, llm_client
+from src.config import DEFAULT_USER_ID
 from src.mentor import Mentor
 import json
 
@@ -60,7 +61,7 @@ async def stream_response(message: str) -> AsyncGenerator[str, None]:
 
 
 # Instantiate Mentor agent (fixed user_id for now)
-mentor = Mentor(memory_manager, llm_client, user_id="u42")
+mentor = Mentor(memory_manager, llm_client, user_id=DEFAULT_USER_ID)
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -100,7 +101,7 @@ async def chat_stream(request: Request):
 @app.get("/chatlog", response_model=List[ChatLogMessage])
 def chatlog_endpoint() -> List[ChatLogMessage]:
     """
-    Returns the recent chat log for the current user (u42).
+    Returns the recent chat log for the current user (DEFAULT_USER_ID).
     """
-    # TODO: Replace 'u42' with real user_id from auth/session
-    return memory_manager.fetch_recent("u42")
+    messages = memory_manager.fetch_recent(DEFAULT_USER_ID)
+    return messages

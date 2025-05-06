@@ -11,6 +11,6 @@ export function getApiBaseUrl(): string {
   if (Platform.OS === 'web') {
     return 'http://localhost:8000';
   }
-  // Replace with your actual local IP address
-  return 'http://192.168.178.121:8000';
+  // Replace with your actual local IP address (ipconfig getifaddr en0)
+  return 'http://192.168.178.46:8000';
 } 

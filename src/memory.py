@@ -1,12 +1,11 @@
 """
 Encapsulates memory retrieval, storage, and thread management logic for the Mentor agent.
-Provides a MemoryManager class for handling user memories and conversation threads.
+Provides a MemoryManager class for handling user memories and conversations.
 """
 
 from mem0 import MemoryClient
 from collections import OrderedDict
 from datetime import UTC, datetime, timezone
-from zoneinfo import ZoneInfo
 import re
 import logging
 from typing import Any, Optional, List, Dict
@@ -14,12 +13,15 @@ import json
 import os
 from threading import Lock
 
-USER_TZ = ZoneInfo("Europe/Berlin")
-RECENCY_HALFLIFE_DAYS = 30
-_MIN_SIMILARITY = 0.45
+from src.config import (
+    USER_TZ,
+    RECENCY_HALFLIFE_DAYS,
+    MIN_SIMILARITY_THRESHOLD,
+    WINDOW_MESSAGES,
+    LOG_FILE,
+)
+
 _DUPLICATE_REGEX = re.compile(r"\W+")
-WINDOW_MESSAGES = 20  # static tail you feed to the LLM
-LOG_FILE = "data/chatlog.json"
 _log_lock = Lock()
 
 logger = logging.getLogger("MentorMemory")
@@ -76,7 +78,7 @@ class MemoryManager:
 
         def score(hit: dict) -> float:
             sim = hit["score"]
-            if sim < _MIN_SIMILARITY:
+            if sim < MIN_SIMILARITY_THRESHOLD:
                 return 0.0
             ts_iso = hit.get("metadata", {}).get("ts") or hit["created_at"]
             try:
@@ -180,5 +182,38 @@ class MemoryManager:
     ) -> List[Dict[str, str]]:
         """Return the *k* most-recent messages (oldest first)."""
         data = self._load_log()
-        tail = data.get(user_id, [])[-k:]
-        return tail
+        messages = data.get(user_id, [])[-k:]
+        return [
+            {
+                "role": msg["role"],
+                "content": msg["content"],
+                "timestamp": msg.get("timestamp", datetime.now(UTC).isoformat()),
+            }
+            for msg in messages
+        ]
+
+    def format_recent_messages(self, user_id: str, k: int = WINDOW_MESSAGES) -> str:
+        """
+        Format recent messages for inclusion in the system prompt.
+
+        Note: This method is deprecated as we now pass recent messages directly in the thread parameter.
+        Kept for backward compatibility.
+
+        Args:
+            user_id (str): The user identifier.
+            k (int, optional): Number of messages to include. Defaults to WINDOW_MESSAGES.
+
+        Returns:
+            str: Formatted string of recent messages.
+        """
+        logger.warning("format_recent_messages is deprecated, use fetch_recent instead")
+        messages = self._load_log().get(user_id, [])[-k:]
+        if not messages:
+            return "[none]"
+
+        formatted_messages = []
+        for msg in messages:
+            role = "User" if msg["role"] == "user" else "Mentor"
+            formatted_messages.append(f"{role}: {msg['content']}")
+
+        return "\n".join(formatted_messages)

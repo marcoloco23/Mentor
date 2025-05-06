@@ -1,0 +1,3 @@
+- Add initial assistant prompt to start conversation
+- Improve prompt to be more helpful
+- Store user profiles (use mem0 export functionality)

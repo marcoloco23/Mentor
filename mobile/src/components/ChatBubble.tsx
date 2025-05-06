@@ -5,6 +5,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { getTheme } from '../utils/theme';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
+import Markdown from 'react-native-markdown-display';
 
 /**
  * Message interface for chat bubbles.
@@ -27,7 +28,7 @@ export interface ChatBubbleProps {
 
 /**
  * Renders a single chat message bubble with theming and accessibility support.
- * Allows native text selection via the `selectable` prop on the Text component.
+ * Supports markdown formatting for message text.
  */
 const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onPress, onLongPress }) => {
   const scheme = useColorScheme();
@@ -61,6 +62,59 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onPress, onLongPress }
     isUser ? styles.bubbleUserContainer : styles.bubbleAssistantContainer,
   ];
 
+  // Configure markdown styles based on current theme
+  const markdownStyles = {
+    body: {
+      color: textStyle.reduce((color, style) => style.color || color, theme.text),
+      fontSize: styles.text.fontSize,
+      lineHeight: styles.text.lineHeight,
+      fontWeight: isUser ? styles.userText.fontWeight : 'normal',
+    },
+    // Add styling for specific markdown elements
+    strong: {
+      fontWeight: 'bold',
+    },
+    em: {
+      fontStyle: 'italic',
+    },
+    heading1: {
+      fontSize: styles.text.fontSize * 1.5,
+      fontWeight: 'bold',
+      marginTop: 10,
+      marginBottom: 5,
+    },
+    heading2: {
+      fontSize: styles.text.fontSize * 1.3,
+      fontWeight: 'bold',
+      marginTop: 8,
+      marginBottom: 4,
+    },
+    heading3: {
+      fontSize: styles.text.fontSize * 1.1,
+      fontWeight: 'bold',
+      marginTop: 6,
+      marginBottom: 3,
+    },
+    code_block: {
+      backgroundColor: scheme === 'dark' ? '#2d2d2d' : '#f5f5f5',
+      padding: 10,
+      borderRadius: 5,
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    },
+    code_inline: {
+      backgroundColor: scheme === 'dark' ? '#2d2d2d' : '#f5f5f5',
+      padding: 2,
+      borderRadius: 3,
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    },
+    bullet_list: {
+      marginLeft: 10,
+    },
+    ordered_list: {
+      marginLeft: 10,
+    },
+  };
+
   return (
     <Animated.View entering={FadeInUp.duration(250)}>
       <Pressable
@@ -71,10 +125,19 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onPress, onLongPress }
         style={containerStyle}
       >
         <View style={bubbleStyle}>
-          {/* The Text is selectable, allowing users to select/copy text using the native system toolbar. */}
-          <Text selectable style={textStyle} allowFontScaling={true}>
-            {message.text}
-          </Text>
+          {message.role === 'typing' ? (
+            <Text selectable style={textStyle} allowFontScaling={true}>
+              {message.text}
+            </Text>
+          ) : (
+            <Markdown 
+              style={markdownStyles}
+              selectable={true}
+              allowFontScaling={true}
+            >
+              {message.text}
+            </Markdown>
+          )}
         </View>
       </Pressable>
     </Animated.View>
