@@ -182,7 +182,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscribe, disabled = 
           </Animated.View>
           {isLoading && (
             <View style={styles.loadingOverlay} pointerEvents="none">
-              <ActivityIndicator animating={true} size={28} color={theme.colors.primary} style={{ opacity: 0.85 }} />
+              <ActivityIndicator animating={true} size={36} color={theme.colors.primary} style={{ opacity: 0.85 }} />
             </View>
           )}
         </Animated.View>
