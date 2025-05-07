@@ -2,7 +2,7 @@
 FastAPI backend for Mentor mobile app.
 """
 
-from fastapi import FastAPI, Request, Query
+from fastapi import FastAPI, Request, Query, UploadFile, File, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Any, AsyncGenerator, List, Dict, Optional
@@ -15,6 +15,19 @@ from src.boot import memory_manager, llm_client
 from src.config import DEFAULT_USER_ID
 from src.mentor import Mentor
 import json
+import io
+
+# Supported MIME types your mobile app is likely to send
+SUPPORTED_AUDIO_TYPES = {
+    "audio/wav",
+    "audio/x-wav",
+    "audio/mpeg",
+    "audio/mp3",
+    "audio/mp4",
+    "audio/x-m4a",
+    "audio/webm",
+    "audio/ogg",
+}
 
 # Configure logging
 logging.basicConfig(
@@ -65,6 +78,12 @@ class ChatLogMessage(BaseModel):
     role: str
     content: str
     timestamp: str
+
+
+class TranscriptionResponse(BaseModel):
+    model: str
+    language: str | None
+    transcription: str
 
 
 def sse_format(data: str) -> str:
@@ -185,3 +204,66 @@ def chatlog_endpoint(user_id: Optional[str] = Query(None)) -> List[ChatLogMessag
     except Exception as e:
         logger.error(f"Error fetching chat log for user {user}: {str(e)}")
         raise
+
+
+@app.post("/transcribe_audio", response_model=TranscriptionResponse)
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    language: str | None = Query(None, description="ISO-639-1 code, e.g. 'de'"),
+    model: str = Query("gpt-4o-transcribe", description="or gpt-4o-mini-transcribe"),
+) -> TranscriptionResponse:
+    """
+    Speech-to-text via GPT-4o.
+    * `language` — pass if known for lower latency.
+    * `model` — choose mini for cheaper bulk runs.
+    """
+    if file.content_type not in SUPPORTED_AUDIO_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file type. Allowed: {', '.join(sorted(SUPPORTED_AUDIO_TYPES))}",
+        )
+
+    audio_bytes = await file.read()
+    logger.info(
+        f"Transcribing {file.filename} ({len(audio_bytes)} bytes) "
+        f"with {model}, lang={language}"
+    )
+
+    # Wrap bytes in a file-like object as the SDK expects
+    audio_file = io.BytesIO(audio_bytes)
+    audio_file.name = file.filename
+
+    # Build the request payload
+    kwargs: Dict[str, Any] = {
+        "file": audio_file,
+        "model": model,
+        "prompt": "Transcribe accurately; keep English parts in English.",
+        "language": language,
+        "temperature": 0.0,
+    }
+    # Strip None values to avoid API complaints
+    clean_kwargs = {k: v for k, v in kwargs.items() if v is not None}
+
+    try:
+        logger.info(f"Sending transcription request with kwargs: {clean_kwargs}")
+        response = llm_client.llm.audio.transcriptions.create(**clean_kwargs)
+        logger.info(f"Transcription successful, response type: {type(response)}")
+
+        # Extract the text from the response object if it's not already a string
+        transcription_text = (
+            response.text if hasattr(response, "text") else str(response)
+        )
+    except Exception as e:
+        logger.exception(
+            f"OpenAI transcription failed with error type {type(e)}: {str(e)}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Transcription error: {str(e)}",
+        )
+
+    return TranscriptionResponse(
+        model=model,
+        language=language,
+        transcription=transcription_text,
+    )

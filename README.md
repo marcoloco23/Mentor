@@ -40,19 +40,29 @@ Mentor is a conversational AI that **remembers what matters** and guides you wit
 ### 1. Backend API (FastAPI)
 
 ```sh
-uvicorn main:app --host 0.0.0.0 --port 8000
+# Local development
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+# For mobile development with Expo Go, also run in a separate terminal:
+ngrok http 8000
 ```
-- The API will be available at `http://localhost:8000`.
+- The API will be available at `http://localhost:8000` for web development
+- When using ngrok, note the https URL (e.g., `https://xxxx-xx-xx-xxx-xxx.ngrok-free.app`) and update it in `mobile/src/utils/apiBaseUrl.ts`
 
 ### 2. Mobile App (Expo/React Native)
 
 ```sh
 cd mobile
 npm install
-npx expo start
+npx expo start         # For local development using LAN
+# OR
+npx expo start --tunnel # For more reliable connection across networks
 ```
 - Press `i` to launch the iOS simulator, or scan the QR code with Expo Go on your device.
-- The app will connect to the backend at `http://localhost:8000` by default (see `src/api/mentorApi.ts`).
+- When using Expo Go on a physical device, make sure to:
+  1. Keep the API server running
+  2. Keep ngrok tunnel running
+  3. Update the ngrok URL in `apiBaseUrl.ts`
 
 ---
 

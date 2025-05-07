@@ -25,6 +25,12 @@ export interface ChatLogMessage {
   timestamp: string;
 }
 
+export interface TranscriptionResponse {
+  model: string;
+  language?: string | null;
+  transcription: string;
+}
+
 const API_BASE_URL = getApiBaseUrl();
 
 /**
@@ -90,4 +96,39 @@ export async function getChatLog(userId?: string): Promise<ChatLogMessage[]> {
     : `${API_BASE_URL}/chatlog`;
   const res = await axios.get<ChatLogMessage[]>(url);
   return res.data;
+}
+
+/**
+ * Sends audio data to the backend for transcription.
+ * @param formData FormData object containing the audio file.
+ * @returns TranscriptionResponse from the backend.
+ */
+export async function transcribeAudio(
+  formData: FormData,
+): Promise<TranscriptionResponse> {
+  const url = `${API_BASE_URL}/transcribe_audio`;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorDetail;
+      try {
+        const errorData = JSON.parse(errorText);
+        errorDetail = errorData.detail || errorText;
+      } catch (e) {
+        errorDetail = errorText;
+      }
+      throw new Error(typeof errorDetail === 'string' ? errorDetail : JSON.stringify(errorDetail));
+    }
+
+    return await response.json() as TranscriptionResponse;
+  } catch (error) {
+    console.error('Transcription failed:', error);
+    throw error;
+  }
 }

@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, StyleSheet, Platform, useColorScheme } from 'react-native';
-import { TextInput, IconButton } from 'react-native-paper';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Platform, useColorScheme, Animated } from 'react-native';
+import { TextInput, IconButton, useTheme as usePaperTheme } from 'react-native-paper';
 import { getTheme } from '../utils/theme';
+import AudioRecorder from './AudioRecorder';
 
 /**
  * Props for Composer component.
@@ -33,74 +34,141 @@ const Composer: React.FC<ComposerProps> = ({
 }) => {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
+  const paperTheme = usePaperTheme();
+  const isIOS = Platform.OS === 'ios';
+  
+  // Animation for send button appearance
+  const sendButtonOpacity = useRef(new Animated.Value(value.trim() ? 1 : 0)).current;
+  
+  // Update animation when value changes
+  useEffect(() => {
+    Animated.timing(sendButtonOpacity, {
+      toValue: value.trim() ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [value]);
+
+  const handleTranscribe = (transcription: string) => {
+    onChangeText(value ? `${value} ${transcription}` : transcription);
+  };
 
   return (
     <View style={[
-      styles.inputRow,
+      styles.container,
       {
-        backgroundColor: theme.backgroundSecondary,
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: theme.border,
-        shadowColor: '#000',
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-        elevation: 2,
-        margin: 8,
-        marginBottom: Platform.OS === 'ios' ? 12 : 4,
-      },
+        backgroundColor: isIOS ? theme.backgroundSecondary : theme.background,
+        paddingBottom: isIOS ? 30 : 12,
+      }
     ]}>
-      <TextInput
-        style={[
-          styles.input,
-          {
-            backgroundColor: theme.background,
-            borderRadius: 18,
-            borderWidth: 0,
-            color: theme.text,
-            paddingVertical: 8,
-            paddingHorizontal: 14,
-            marginRight: 4,
-            maxHeight: MAX_HEIGHT,
-            minHeight: LINE_HEIGHT * 2,
-          },
-        ]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder="Ask your mentor…"
-        placeholderTextColor={theme.text}
-        multiline
-        blurOnSubmit={false}
-        onSubmitEditing={Platform.OS !== 'web' ? onSend : undefined}
-        onKeyPress={onKeyPress}
-        accessible
-        accessibilityLabel="Message input"
-        allowFontScaling={true}
-      />
-      <IconButton
-        icon="send"
-        disabled={!value.trim() || typing || disabled}
-        onPress={onSend}
-        size={28}
-        accessibilityLabel="Send message"
-        style={{ backgroundColor: 'transparent', marginLeft: 2 }}
-      />
+      <View style={[
+        styles.inputRow,
+        {
+          backgroundColor: theme.background,
+          borderRadius: 28,
+          marginHorizontal: 8,
+          marginBottom: isIOS ? 0 : 4,
+          paddingVertical: isIOS ? 4 : 0,
+          shadowColor: '#000',
+          shadowOpacity: isIOS ? 0.12 : 0.06,
+          shadowRadius: isIOS ? 10 : 4,
+          shadowOffset: { width: 0, height: isIOS ? 4 : 1 },
+          elevation: 3,
+        },
+      ]}>
+        <TextInput
+          style={[
+            styles.input,
+            {
+              backgroundColor: 'transparent',
+              color: theme.text,
+              paddingVertical: isIOS ? 12 : 10,
+              paddingHorizontal: 16,
+              marginRight: 0,
+              maxHeight: MAX_HEIGHT,
+              minHeight: isIOS ? 48 : LINE_HEIGHT * 2,
+              fontSize: isIOS ? 17 : 17,
+            },
+          ]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder="Ask your mentor…"
+          placeholderTextColor={theme.textSecondary}
+          multiline
+          blurOnSubmit={false}
+          onSubmitEditing={Platform.OS !== 'web' ? onSend : undefined}
+          onKeyPress={onKeyPress}
+          editable={!disabled}
+        />
+        
+        <View style={styles.actionsContainer}>
+          <View style={styles.audioRecorderWrapper}>
+            <AudioRecorder onTranscribe={handleTranscribe} disabled={typing || disabled} />
+          </View>
+          
+          <Animated.View 
+            pointerEvents={value.trim() ? 'auto' : 'none'}
+            style={{ 
+              opacity: sendButtonOpacity,
+              width: 44,
+              height: 44,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <IconButton
+              icon="send-circle"
+              disabled={!value.trim() || typing || disabled}
+              onPress={onSend}
+              size={32}
+              accessibilityLabel="Send message"
+              style={[
+                styles.sendButton,
+                { backgroundColor: value.trim() && !disabled ? paperTheme.colors.primary : theme.border },
+              ]}
+              iconColor={value.trim() && !disabled ? '#fff' : theme.textSecondary}
+            />
+          </Animated.View>
+        </View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
   },
   input: {
     flex: 1,
-    fontSize: 17,
-    lineHeight: 22,
-    backgroundColor: 'transparent',
+    lineHeight: Platform.OS === 'ios' ? 22 : 22,
     paddingHorizontal: 0,
+    borderWidth: 0,
+    outlineWidth: 0,
   },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: Platform.OS === 'ios' ? 8 : 6,
+    paddingBottom: Platform.OS === 'ios' ? 6 : 4,
+    height: '100%',
+  },
+  audioRecorderWrapper: {
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButton: {
+    margin: 0,
+    borderRadius: 22,
+    width: 44,
+    height: 44,
+  }
 });
 
 export default Composer; 
