@@ -58,22 +58,23 @@ const Composer: React.FC<ComposerProps> = ({
       styles.container,
       {
         backgroundColor: isIOS ? theme.backgroundSecondary : theme.background,
-        paddingBottom: isIOS ? 30 : 12,
+        paddingBottom: isIOS ? 24 : 8,
       }
     ]}>
       <View style={[
         styles.inputRow,
         {
-          backgroundColor: theme.background,
-          borderRadius: 28,
-          marginHorizontal: 8,
+          backgroundColor: theme.backgroundSecondary,
+          borderRadius: 24,
+          marginHorizontal: 12,
           marginBottom: isIOS ? 0 : 4,
-          paddingVertical: isIOS ? 4 : 0,
+          paddingVertical: 0,
+          paddingHorizontal: 8,
           shadowColor: '#000',
-          shadowOpacity: isIOS ? 0.12 : 0.06,
-          shadowRadius: isIOS ? 10 : 4,
-          shadowOffset: { width: 0, height: isIOS ? 4 : 1 },
-          elevation: 3,
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 2,
         },
       ]}>
         <TextInput
@@ -82,12 +83,12 @@ const Composer: React.FC<ComposerProps> = ({
             {
               backgroundColor: 'transparent',
               color: theme.text,
-              paddingVertical: isIOS ? 12 : 10,
-              paddingHorizontal: 16,
+              paddingVertical: isIOS ? 10 : 8,
+              paddingHorizontal: 0,
               marginRight: 0,
               maxHeight: MAX_HEIGHT,
-              minHeight: isIOS ? 48 : LINE_HEIGHT * 2,
-              fontSize: isIOS ? 17 : 17,
+              minHeight: isIOS ? 44 : LINE_HEIGHT * 2,
+              fontSize: 17,
             },
           ]}
           value={value}
@@ -99,11 +100,20 @@ const Composer: React.FC<ComposerProps> = ({
           onSubmitEditing={Platform.OS !== 'web' ? onSend : undefined}
           onKeyPress={onKeyPress}
           editable={!disabled}
+          mode="flat"
+          underlineColor="transparent"
+          activeUnderlineColor="transparent"
+          accessibilityLabel="Message input field"
+          accessibilityRole="text"
+          selectionColor={theme.textSecondary}
         />
         
         <View style={styles.actionsContainer}>
           <View style={styles.audioRecorderWrapper}>
-            <AudioRecorder onTranscribe={handleTranscribe} disabled={typing || disabled} />
+            <AudioRecorder 
+              onTranscribe={handleTranscribe} 
+              disabled={typing || disabled} 
+            />
           </View>
           
           <Animated.View 
@@ -114,6 +124,7 @@ const Composer: React.FC<ComposerProps> = ({
               height: 44,
               justifyContent: 'center',
               alignItems: 'center',
+              marginLeft: 2,
             }}
           >
             <IconButton
@@ -122,9 +133,11 @@ const Composer: React.FC<ComposerProps> = ({
               onPress={onSend}
               size={32}
               accessibilityLabel="Send message"
+              accessibilityRole="button"
               style={[
                 styles.sendButton,
                 { backgroundColor: value.trim() && !disabled ? paperTheme.colors.primary : theme.border },
+                ...(value.trim() && !disabled ? [styles.sendButtonActive] : []),
               ]}
               iconColor={value.trim() && !disabled ? '#fff' : theme.textSecondary}
             />
@@ -141,7 +154,7 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
   input: {
     flex: 1,
@@ -149,17 +162,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     borderWidth: 0,
     outlineWidth: 0,
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+    borderRadius: 18,
   },
   actionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: Platform.OS === 'ios' ? 8 : 6,
-    paddingBottom: Platform.OS === 'ios' ? 6 : 4,
-    height: '100%',
+    paddingRight: 4,
+    paddingBottom: 0,
+    height: 60,
   },
   audioRecorderWrapper: {
-    width: 60,
-    height: 60,
+    width: 48,
+    height: 48,
+    minWidth: 44,
+    minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -168,7 +186,18 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     width: 44,
     height: 44,
-  }
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonActive: {
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
 });
 
 export default Composer; 
