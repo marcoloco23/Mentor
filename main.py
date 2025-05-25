@@ -1,5 +1,5 @@
 """
-FastAPI backend for Mentor mobile app.
+FastAPI backend for the Ted mobile app.
 """
 
 from fastapi import FastAPI, Request, Query, UploadFile, File, HTTPException, status
@@ -13,7 +13,7 @@ import logging
 from contextlib import asynccontextmanager
 from src.boot import memory_manager, llm_client
 from src.config import DEFAULT_USER_ID
-from src.mentor import Mentor
+from src.ted import Ted
 import json
 import io
 
@@ -35,7 +35,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
-logger = logging.getLogger("mentor_api")
+logger = logging.getLogger("ted_api")
 
 
 @asynccontextmanager
@@ -43,11 +43,11 @@ async def lifespan(app: FastAPI):
     """
     Manages the lifespan of the FastAPI application.
     """
-    logger.info("Mentor API is starting up")
+    logger.info("Ted API is starting up")
     logger.info(f"Default user_id: {DEFAULT_USER_ID}")
     yield
-    logger.info("Mentor API is shutting down")
-    logger.info(f"Served {len(mentor_instances)} unique users")
+    logger.info("Ted API is shutting down")
+    logger.info(f"Served {len(ted_instances)} unique users")
 
 
 app = FastAPI(lifespan=lifespan)
@@ -61,7 +61,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-logger.info("Starting Mentor API service")
+logger.info("Starting Ted API service")
 
 
 class ChatRequest(BaseModel):
@@ -106,34 +106,34 @@ async def stream_response(message: str) -> AsyncGenerator[str, None]:
     logger.debug("Test mode stream complete")
 
 
-# Create a dictionary to store mentor instances for different users
-mentor_instances = {}
+# Create a dictionary to store Ted instances for different users
+ted_instances = {}
 logger.info(f"Initialized with default user_id: {DEFAULT_USER_ID}")
 
 
-def get_mentor_for_user(user_id: str) -> Mentor:
+def get_ted_for_user(user_id: str) -> Ted:
     """
-    Returns a Mentor instance for the given user_id, creating one if it doesn't exist.
+    Returns a Ted instance for the given user_id, creating one if it doesn't exist.
     """
-    if user_id not in mentor_instances:
-        logger.info(f"Creating new Mentor instance for user_id: {user_id}")
-        mentor_instances[user_id] = Mentor(memory_manager, llm_client, user_id=user_id)
+    if user_id not in ted_instances:
+        logger.info(f"Creating new Ted instance for user_id: {user_id}")
+        ted_instances[user_id] = Ted(memory_manager, llm_client, user_id=user_id)
     else:
-        logger.debug(f"Using existing Mentor instance for user_id: {user_id}")
-    return mentor_instances[user_id]
+        logger.debug(f"Using existing Ted instance for user_id: {user_id}")
+    return ted_instances[user_id]
 
 
-# Instantiate default Mentor agent
-mentor_instances[DEFAULT_USER_ID] = Mentor(
+# Instantiate default Ted agent
+ted_instances[DEFAULT_USER_ID] = Ted(
     memory_manager, llm_client, user_id=DEFAULT_USER_ID
 )
-logger.info(f"Active mentor instances: {list(mentor_instances.keys())}")
+logger.info(f"Active Ted instances: {list(ted_instances.keys())}")
 
 
 @app.post("/chat", response_model=ChatResponse)
 def chat_endpoint(request: ChatRequest) -> ChatResponse:
     """
-    Dummy chat endpoint. Replace with real Mentor logic.
+    Dummy chat endpoint. Replace with real Ted logic.
     """
     user_id = request.user_id or DEFAULT_USER_ID
     logger.info(f"Chat request received from user_id: {user_id}")
@@ -163,12 +163,12 @@ async def chat_stream(request: Request):
         )
     else:
         logger.info(f"Streaming real chat for user_id: {user_id}")
-        # Get or create the mentor for this user
-        user_mentor = get_mentor_for_user(user_id)
+        # Get or create the Ted for this user
+        user_mentor = get_ted_for_user(user_id)
 
-        # Use real Mentor streaming
+        # Use real Ted streaming
         async def mentor_stream():
-            logger.debug(f"Starting mentor stream for user_id: {user_id}")
+            logger.debug(f"Starting ted stream for user_id: {user_id}")
             token_count = 0
             try:
                 for token in user_mentor.stream_reply(message):

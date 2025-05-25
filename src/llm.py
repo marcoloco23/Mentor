@@ -1,5 +1,5 @@
 """
-Encapsulates LLM chat logic for the Mentor agent.
+Encapsulates LLM chat logic for the Ted agent.
 Provides an LLMClient class for generating and streaming chat completions using an LLM backend.
 """
 
@@ -11,12 +11,12 @@ from src.config import LLM_MODEL, DEFAULT_TEMPERATURE, ASSISTANT_NAME, DEFAULT_U
 from src.prompts import SYSTEM_TEMPLATE
 
 
-logger = logging.getLogger("MentorLLM")
+logger = logging.getLogger("TedLLM")
 
 
 class LLMClient:
     """
-    Handles LLM chat completions for the Mentor agent.
+    Handles LLM chat completions for the Ted agent.
 
     Attributes:
         llm (OpenAI): The OpenAI client instance for chat completions.

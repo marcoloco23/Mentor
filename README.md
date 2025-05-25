@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="docs/logo.png" alt="Mentor Logo" width="120"/>
+  <img src="docs/logo.png" alt="Ted Logo" width="120"/>
 </p>
 
 <div align="center">
 
-# Mentor: Your Personal AI Coach
+# Ted: Your Lifelong AI Companion
 
 <h3>
 <a href="#-architecture">Architecture</a> | <a href="#-quickstart">Quickstart</a> | <a href="#-features">Features</a> | <a href="#-roadmap">Roadmap</a> | <a href="#-contributing">Contributing</a> | <a href="#-license">License</a>
@@ -14,15 +14,15 @@
 
 ---
 
-Mentor is a conversational AI that **remembers what matters** and guides you with direct, no‑fluff advice. Think of it as a seasoned mentor who interviews you, learns your goals, and asks sharp follow‑up questions to accelerate your growth.
+Ted is a conversational AI that **remembers what matters** and supports you with playful, honest, and sometimes cheeky advice. Think of Ted as your loyal best friend—always there to make you laugh, help you grow, and get you through anything.
 
 ---
 
 ## ✨ Features
 
-- **Long-term relationship:** Builds an evolving knowledge base about *you*: your goals, preferences, and past decisions.
-- **Socratic guidance:** Asks questions that surface blind spots and spark self-reflection.
-- **Actionable insight:** Each answer is concise, specific, and backed by context—not generic self-help jargon.
+- **Lifelong friendship:** Builds an evolving knowledge base about *you*: your stories, quirks, and dreams.
+- **Playful honesty:** Gives you the real talk, but with warmth and wit—never boring, always on your side.
+- **Actionable support:** Each answer is concise, specific, and tailored to you—not generic self-help.
 - **Privacy & control:** All memories live in a dedicated memory layer (Mem0). You can inspect, export, or delete them at any time.
 - **Pluggable LLM:** Uses OpenAI GPT-4.1 by default, but is easily extensible.
 - **Modern UI:** Streamlit-based, with token streaming for a responsive chat experience.
@@ -87,9 +87,9 @@ MEM0_API_KEY=mem-…
 | Layer      | Tech                              | Purpose                                             |
 |------------|-----------------------------------|-----------------------------------------------------|
 | **UI**     | Streamlit                         | Lightweight chat front‑end with token streaming      |
-| **Agent**  | `Mentor` class                    | Orchestrates retrieval → LLM → async store          |
+| **Agent**  | `Ted` class                       | Orchestrates retrieval → LLM → async store          |
 | **Memory** | Mem0                              | Vector + metadata store for long‑term memories       |
-| **LLM**    | OpenAI GPT‑4.1 (pluggable)    | Generates and streams responses                     |
+| **LLM**    | OpenAI GPT‑4.1 (pluggable)        | Generates and streams responses                     |
 
 > **Flow per turn:**
 > 1. Retrieve top memories `k=5` (recency‑weighted, deduped)
@@ -102,7 +102,7 @@ MEM0_API_KEY=mem-…
 
 | Path              | Description                          |
 |-------------------|--------------------------------------|
-| `src/mentor.py`   | Core agent logic and streaming helper |
+| `src/ted.py`      | Core agent logic and streaming helper |
 | `src/memory.py`   | Retrieval, re‑ranking, async persistence |
 | `src/llm.py`      | Thin wrapper around the OpenAI client |
 | `app.py`          | Streamlit UI                         |
@@ -113,10 +113,10 @@ MEM0_API_KEY=mem-…
 
 ```python
 import os
-from mentor import Mentor
+from ted import Ted
 
-mentor = Mentor(openai_api_key=os.getenv("OPENAI_API_KEY"), mem0_api_key=os.getenv("MEM0_API_KEY"))
-response = mentor.ask("How can I improve my productivity?")
+ted = Ted(openai_api_key=os.getenv("OPENAI_API_KEY"), mem0_api_key=os.getenv("MEM0_API_KEY"))
+response = ted.ask("How can I improve my productivity?")
 print(response)
 ```
 
@@ -159,4 +159,4 @@ MIT — see [`LICENSE`](LICENSE).
 
 ---
 
-<p align="center"><em>Crafted with curiosity and a dash of Socratic questioning.</em></p>
+<p align="center"><em>Crafted with loyalty, wit, and a dash of mischief—just like Ted.</em></p>

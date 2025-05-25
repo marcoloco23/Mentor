@@ -1,5 +1,5 @@
 """
-Encapsulates memory retrieval, storage, and thread management logic for the Mentor agent.
+Encapsulates memory retrieval, storage, and thread management logic for the Ted agent.
 Provides a MemoryManager class for handling user memories and conversations.
 """
 
@@ -24,7 +24,7 @@ from src.config import (
 _DUPLICATE_REGEX = re.compile(r"\W+")
 _log_lock = Lock()
 
-logger = logging.getLogger("MentorMemory")
+logger = logging.getLogger("TedMemory")
 
 
 class MemoryManager:
@@ -246,7 +246,7 @@ class MemoryManager:
 
         formatted_messages = []
         for msg in messages:
-            role = "User" if msg["role"] == "user" else "Mentor"
+            role = "User" if msg["role"] == "user" else "Ted"
             formatted_messages.append(f"{role}: {msg['content']}")
 
         return "\n".join(formatted_messages)

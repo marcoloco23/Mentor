@@ -1,5 +1,5 @@
 """
-Mentor agent class for coaching, delegating memory and LLM logic to separate modules.
+Ted agent class — lifelong companion and confidant, delegating memory and LLM logic to separate modules.
 """
 
 from typing import Any, Optional
@@ -18,9 +18,9 @@ from src.config import (
     DEFAULT_USER_NAME,
 )
 
-logger = logging.getLogger("MentorAgent")
+logger = logging.getLogger("TedAgent")
 _EXECUTOR = ThreadPoolExecutor(
-    max_workers=MAX_THREAD_WORKERS, thread_name_prefix="mentor-bg"
+    max_workers=MAX_THREAD_WORKERS, thread_name_prefix="ted-bg"
 )
 
 
@@ -32,9 +32,9 @@ def _log_when_done(fut: Future) -> None:
         logger.exception("Background memory.store() failed: %s", e)
 
 
-class Mentor:
+class Ted:
     """
-    Mentor agent for coaching, using memory and LLM modules.
+    Ted agent – a lifelong companion and confidant, using memory and LLM modules.
 
     Attributes:
         memory (MemoryManager): The memory manager instance for retrieval and storage.
@@ -59,7 +59,7 @@ class Mentor:
         version: str = DEFAULT_VERSION,
     ):
         """
-        Initialize the Mentor agent.
+        Initialize the Ted agent.
 
         Args:
             memory (MemoryManager): The memory manager instance.
@@ -79,7 +79,7 @@ class Mentor:
         # (or omits the parameter entirely), we derive a deterministic identifier from the user_id so that
         # the same user keeps the same "Ted" across sessions while different users have isolated memories.
         #
-        # Example: user_id="alice" → agent_id="mentor-alice"
+        # Example: user_id="alice" → agent_id="ted-alice"
         if agent_id is None or agent_id == DEFAULT_AGENT_ID:
             self.agent_id = f"{DEFAULT_AGENT_ID}-{user_id}"
         else:
@@ -89,7 +89,7 @@ class Mentor:
         self.assistant_name = assistant_name
         self.user_name = user_name
         logger.info(
-            f"Initialized Mentor for user_id={user_id}, agent_id={self.agent_id}, k={k}"
+            f"Initialized Ted for user_id={user_id}, agent_id={self.agent_id}, k={k}"
         )
 
     def __call__(self, user_msg: str) -> str:

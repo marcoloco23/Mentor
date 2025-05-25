@@ -1,6 +1,6 @@
 """
-Defines the schema for exporting Mentor memory records to Mem0's /v1/exports endpoint.
-Provides a MentorMemory Pydantic model and a JSON schema for export.
+Defines the schema for exporting Ted memory records to Mem0's /v1/exports endpoint.
+Provides a TedMemory Pydantic model and a JSON schema for export.
 """
 
 from typing import Optional, List, Dict, Any
@@ -8,7 +8,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
-class MentorMemory(BaseModel):
+class TedMemory(BaseModel):
     """
     Pydantic model representing the shape of a single memory record for export.
 
@@ -36,4 +36,4 @@ class MentorMemory(BaseModel):
 
 
 # 👉 the dict you pass to `create_memory_export(schema=...)`
-json_schema: Dict[str, Any] = MentorMemory.model_json_schema()
+json_schema: Dict[str, Any] = TedMemory.model_json_schema()

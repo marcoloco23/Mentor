@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mentor",
-    "slug": "mentor", 
+    "name": "ted",
+    "slug": "ted", 
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

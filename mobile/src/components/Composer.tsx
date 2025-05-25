@@ -93,7 +93,7 @@ const Composer: React.FC<ComposerProps> = ({
           ]}
           value={value}
           onChangeText={onChangeText}
-          placeholder="Ask your mentor…"
+          placeholder="Talk to me…"
           placeholderTextColor={theme.textSecondary}
           multiline
           blurOnSubmit={false}

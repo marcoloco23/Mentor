@@ -1,5 +1,5 @@
 """
-Streamlit chat wrapper for Mentor
+Streamlit chat wrapper for Ted
 Run with:  streamlit run app.py
 """
 
@@ -10,31 +10,29 @@ import uuid
 import streamlit as st
 from src.boot import memory_manager, llm_client
 from src.config import DEFAULT_USER_ID
-from src.mentor import Mentor
+from src.ted import Ted
 
 # ---------------------------------------------------------------------------
 # Session initialisation
 # ---------------------------------------------------------------------------
-if "mentor" not in st.session_state:
-    st.session_state.mentor = Mentor(
-        memory_manager, llm_client, user_id=DEFAULT_USER_ID
-    )
+if "ted" not in st.session_state:
+    st.session_state.ted = Ted(memory_manager, llm_client, user_id=DEFAULT_USER_ID)
 if "history" not in st.session_state:
     st.session_state.history: list[tuple[str, str]] = []  # [(role, text), ...]
 
-mentor: Mentor = st.session_state.mentor
-user_id = mentor.user_id
+ted: Ted = st.session_state.ted
+user_id = ted.user_id
 
 # ---------------------------------------------------------------------------
 # Sidebar conversation management
 # ---------------------------------------------------------------------------
-st.sidebar.title("Mentor")
+st.sidebar.title("Ted")
 st.sidebar.markdown(
     """
 **Tips**
-- The mentor *remembers* what you say.
-- Ask follow-up questions; the answers shape its memory.
-- Use `🗑️ Clear chat window` to start fresh (dev only).
+- Ted *remembers* what you say.
+- Ask follow-up questions; the answers shape his memory.
+- Use `��️ Clear chat window` to start fresh (dev only).
 """
 )
 
@@ -44,7 +42,7 @@ if st.sidebar.button("🗑️ Clear chat window"):
     st.rerun()
 
 # ---------- 3. main chat ----------
-st.title("🧑‍🏫 Mentor")
+st.title("🧸 Ted")
 
 if getattr(st.session_state, "clear_chat", False):
     st.session_state.history = []
@@ -57,15 +55,15 @@ for role, text in st.session_state.history:
     with st.chat_message(role):
         st.markdown(text)
 
-if prompt := st.chat_input("Ask your mentor…"):
+if prompt := st.chat_input("Tell Ted something…"):
     # show user msg immediately
     with st.chat_message("user"):
         st.markdown(prompt)
     st.session_state.history.append(("user", prompt))
 
-    # get mentor reply
+    # get Ted reply
     with st.chat_message("assistant"):
-        response = st.write_stream(mentor.stream_reply(prompt))
+        response = st.write_stream(ted.stream_reply(prompt))
     st.session_state.history.append(("assistant", response))
 
     # Persist history for display without reload

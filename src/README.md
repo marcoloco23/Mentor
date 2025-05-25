@@ -1,10 +1,10 @@
-# Mentor Backend
+# Ted Backend
 
-A powerful AI coaching system that leverages long-term memory for personalized mentorship.
+A playful, loyal AI companion that leverages long-term memory for personalized friendship and support.
 
 ## Architecture Overview
 
-The Mentor backend is built around a clean, modular architecture with clear separation of concerns:
+The Ted backend is built around a clean, modular architecture with clear separation of concerns:
 
 ```
 src/
@@ -14,16 +14,16 @@ src/
 ├── export_schema.py # Memory export schemas
 ├── llm.py          # LLM client for chat completions
 ├── memory.py       # Memory management and retrieval
-├── mentor.py       # Core Mentor agent implementation
+├── ted.py          # Core Ted agent implementation
 └── utils.py        # Utility functions and helpers
 ```
 
 ## Core Components
 
-### 1. Mentor Agent (`mentor.py`)
+### 1. Ted Agent (`ted.py`)
 
-The central component that orchestrates the interaction between memory retrieval and LLM generation. It:
-- Retrieves relevant memories based on the user's message
+The central component that orchestrates the interaction between memory retrieval and LLM generation. Ted:
+- Remembers what matters to you and brings up relevant memories
 - Formats conversation context
 - Passes everything to the LLM for response generation
 - Stores conversations in memory
@@ -53,20 +53,20 @@ Centralizes all configuration parameters:
 
 ## Usage
 
-The Mentor system can be accessed through:
+The Ted system can be accessed through:
 
 ```python
-from src.mentor import Mentor
+from src.ted import Ted
 from src.boot import memory_manager, llm_client
 
-# Initialize the Mentor agent
-mentor = Mentor(memory_manager, llm_client, user_id="your_user_id")
+# Initialize the Ted agent
+ted = Ted(memory_manager, llm_client, user_id="your_user_id")
 
 # Get a response
-response = mentor("What should I focus on this week?")
+response = ted("What should I focus on this week?")
 
 # Or stream a response
-for token in mentor.stream_reply("What are my priorities?"):
+for token in ted.stream_reply("What are my priorities?"):
     print(token, end="", flush=True)
 ```
 
@@ -74,13 +74,13 @@ for token in mentor.stream_reply("What are my priorities?"):
 
 1. **Separation of Concerns**: Each module has a specific responsibility
 2. **Configuration Centralization**: All parameters are defined in one place
-3. **Clean Interface**: The Mentor class provides a simple, intuitive API
+3. **Clean Interface**: The Ted class provides a simple, intuitive API
 4. **Robust Memory Management**: Efficient retrieval and storage of memories
 5. **Lightweight Dependencies**: Minimal external dependencies
 
 ## Development
 
-To contribute to the Mentor backend:
+To contribute to the Ted backend:
 
 1. Ensure you have the required environment variables:
    - `MEM0_API_KEY`

@@ -1,5 +1,5 @@
 """
-Utility functions and helpers for the Mentor application.
+Utility functions and helpers for the Ted application.
 
 This module contains various utility functions that are used across the application.
 """
@@ -9,7 +9,7 @@ import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
 
-logger = logging.getLogger("MentorUtils")
+logger = logging.getLogger("TedUtils")
 
 
 def format_timestamp(timestamp: str) -> str:

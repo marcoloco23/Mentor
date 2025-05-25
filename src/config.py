@@ -1,5 +1,5 @@
 """
-Centralized configuration for the Mentor application.
+Centralized configuration for the Ted application.
 
 This module contains all configuration parameters used across the application,
 including LLM settings, memory parameters, and application defaults.
@@ -25,7 +25,7 @@ WINDOW_MESSAGES: Final[int] = 20  # number of recent messages to include in cont
 LOG_FILE: Final[str] = "data/chatlog.json"
 
 # Agent Configuration
-DEFAULT_AGENT_ID: Final[str] = "mentor"
+DEFAULT_AGENT_ID: Final[str] = "ted"
 DEFAULT_VERSION: Final[str] = "v2"
 
 # Application Defaults
@@ -33,5 +33,5 @@ DEFAULT_USER_ID: Final[str] = "u42"  # Default user ID for CLI interface
 MAX_THREAD_WORKERS: Final[int] = 2
 
 # Assistant Profile
-ASSISTANT_NAME: Final[str] = "Mentor"
+ASSISTANT_NAME: Final[str] = "Ted"
 DEFAULT_USER_NAME: Final[str] = "User"

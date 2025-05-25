@@ -1,5 +1,5 @@
 """
-Initializes and wires up the core dependencies for the Mentor agent, including memory and LLM clients.
+Initializes and wires up the core dependencies for the Ted agent, including memory and LLM clients.
 This module is intended to be imported by entry points to provide ready-to-use, preconfigured components.
 """
 
@@ -20,7 +20,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("MentorBoot")
+logger = logging.getLogger("TedBoot")
 
 # Initialize API clients
 mem0 = MemoryClient(os.environ["MEM0_API_KEY"])
