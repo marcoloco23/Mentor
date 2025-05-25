@@ -74,13 +74,22 @@ class Mentor:
         self.memory = memory
         self.llm = llm
         self.user_id = user_id
-        self.agent_id = agent_id
+        # Ensure each user gets a unique and stable agent_id so that memories are not shared across users.
+        # If the caller provided a custom agent_id we respect it. When the caller uses the default placeholder
+        # (or omits the parameter entirely), we derive a deterministic identifier from the user_id so that
+        # the same user keeps the same "Ted" across sessions while different users have isolated memories.
+        #
+        # Example: user_id="alice" → agent_id="mentor-alice"
+        if agent_id is None or agent_id == DEFAULT_AGENT_ID:
+            self.agent_id = f"{DEFAULT_AGENT_ID}-{user_id}"
+        else:
+            self.agent_id = agent_id
         self.k = k
         self.version = version
         self.assistant_name = assistant_name
         self.user_name = user_name
         logger.info(
-            f"Initialized Mentor for user_id={user_id}, agent_id={agent_id}, k={k}"
+            f"Initialized Mentor for user_id={user_id}, agent_id={self.agent_id}, k={k}"
         )
 
     def __call__(self, user_msg: str) -> str:

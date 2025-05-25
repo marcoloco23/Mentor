@@ -17,7 +17,7 @@ export function getApiBaseUrl(): string {
   const isInExpoGo = Constants.executionEnvironment === 'storeClient';
   
   if (isInExpoGo) {
-    return 'https://e52f-77-11-86-217.ngrok-free.app';
+    return 'https://84df-2a02-3100-1a88-7b00-4157-e806-e712-b4a0.ngrok-free.app';
   }
 
   return 'http://192.168.4.160:8000';
