@@ -14,11 +14,12 @@ export function getApiBaseUrl(): string {
     return 'http://localhost:8000';
   }
 
-  const isInExpoGo = Constants.executionEnvironment === 'storeClient';
+  // const isInExpoGo = Constants.executionEnvironment === 'storeClient';
   
-  if (isInExpoGo) {
-    return 'https://84df-2a02-3100-1a88-7b00-4157-e806-e712-b4a0.ngrok-free.app';
-  }
+  // if (isInExpoGo) {
+  //   return 'https://84df-2a02-3100-1a88-7b00-4157-e806-e712-b4a0.ngrok-free.app';
+  // }
 
-  return 'http://192.168.4.160:8000';
+  // Call ipconfig getifaddr en0 
+  return 'http://192.168.178.46:8000';
 } 

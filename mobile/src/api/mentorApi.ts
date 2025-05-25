@@ -101,15 +101,19 @@ export async function getChatLog(userId?: string): Promise<ChatLogMessage[]> {
 /**
  * Sends audio data to the backend for transcription.
  * @param formData FormData object containing the audio file.
+ * @param model Optional model to use for transcription (defaults to gpt-4o-transcribe with fallback to whisper-1)
  * @returns TranscriptionResponse from the backend.
  */
 export async function transcribeAudio(
   formData: FormData,
+  model: string = 'gpt-4o-transcribe'
 ): Promise<TranscriptionResponse> {
-  const url = `${API_BASE_URL}/transcribe_audio`;
+  // Add model parameter to the request
+  const url = new URL(`${API_BASE_URL}/transcribe_audio`);
+  url.searchParams.append('model', model);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(url.toString(), {
       method: 'POST',
       body: formData,
     });

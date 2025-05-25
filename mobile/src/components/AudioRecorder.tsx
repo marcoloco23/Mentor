@@ -22,7 +22,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscribe, disabled = 
   const micOpacity = React.useRef(new Animated.Value(1)).current;
   const stopOpacity = React.useRef(new Animated.Value(0)).current;
 
-  // Expo Audio hook
+  // Expo Audio hook - using default HIGH_QUALITY preset
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   // Permission check on mount
@@ -88,31 +88,61 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscribe, disabled = 
       setIsLoading(true);
       await audioRecorder.stop();
       setIsRecording(false);
+      
       if (audioRecorder.uri) {
         const formData = new FormData();
+        
+        // Determine the actual file format based on platform and URI
         let filename = audioRecorder.uri.split('/').pop() || 'audio.m4a';
-        let type = 'audio/mp4';
-        if (filename.endsWith('.mp3')) type = 'audio/mpeg';
-        else if (filename.endsWith('.wav')) type = 'audio/wav';
-        else if (filename.endsWith('.webm')) type = 'audio/webm';
+        let mimeType = 'audio/mp4'; // Default for M4A
+        
+        if (Platform.OS === 'web') {
+          // Web typically records in WebM format
+          mimeType = 'audio/webm';
+          filename = 'audio.webm'; // Always use .webm for web recordings
+        } else {
+          // Mobile platforms (iOS/Android) - typically M4A
+          if (filename.endsWith('.m4a') || filename.endsWith('.mp4')) {
+            mimeType = 'audio/mp4';
+            filename = filename.replace(/\.[^.]+$/, '.m4a');
+          } else if (filename.endsWith('.wav')) {
+            mimeType = 'audio/wav';
+          } else if (filename.endsWith('.mp3')) {
+            mimeType = 'audio/mpeg';
+          } else {
+            // Default to M4A for mobile - ensure proper extension
+            mimeType = 'audio/mp4';
+            filename = 'audio.m4a';
+          }
+        }
+
+        console.log(`Preparing to transcribe: ${filename} (${mimeType}) from URI: ${audioRecorder.uri}`);
 
         if (Platform.OS === 'web') {
-          // For web, fetch the blob and force .wav extension and no explicit MIME type
+          // For web, fetch the blob with correct MIME type
           const response = await fetch(audioRecorder.uri);
           const blob = await response.blob();
-          formData.append('file', blob, 'audio.wav');
+          // Create a new blob with the correct MIME type to ensure consistency
+          const correctedBlob = new Blob([blob], { type: mimeType });
+          formData.append('file', correctedBlob, filename);
         } else {
+          // For mobile platforms
           formData.append('file', {
             uri: audioRecorder.uri,
-            type,
+            type: mimeType,
             name: filename,
           } as any);
         }
 
-        const response: TranscriptionResponse = await transcribeAudio(formData);
+        const response: TranscriptionResponse = await transcribeAudio(
+          formData,
+          // Use whisper-1 directly for WebM files since they have known issues with gpt-4o-transcribe
+          mimeType === 'audio/webm' ? 'whisper-1' : 'gpt-4o-transcribe'
+        );
         onTranscribe(response.transcription || '');
       }
     } catch (err: any) {
+      console.error('Transcription error:', err);
       Alert.alert('Error', 'Could not stop or transcribe recording: ' + (err?.message || err));
     } finally {
       setIsLoading(false);

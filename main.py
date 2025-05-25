@@ -25,6 +25,7 @@ SUPPORTED_AUDIO_TYPES = {
     "audio/mp3",
     "audio/mp4",
     "audio/x-m4a",
+    "audio/m4a",
     "audio/webm",
     "audio/ogg",
 }
@@ -213,7 +214,7 @@ async def transcribe_audio(
     model: str = Query("gpt-4o-transcribe", description="or gpt-4o-mini-transcribe"),
 ) -> TranscriptionResponse:
     """
-    Speech-to-text via GPT-4o.
+    Speech-to-text via GPT-4o with fallback to Whisper.
     * `language` — pass if known for lower latency.
     * `model` — choose mini for cheaper bulk runs.
     """
@@ -226,7 +227,7 @@ async def transcribe_audio(
     audio_bytes = await file.read()
     logger.info(
         f"Transcribing {file.filename} ({len(audio_bytes)} bytes) "
-        f"with {model}, lang={language}"
+        f"with {model}, lang={language}, content_type={file.content_type}"
     )
 
     # Wrap bytes in a file-like object as the SDK expects
@@ -247,23 +248,65 @@ async def transcribe_audio(
     try:
         logger.info(f"Sending transcription request with kwargs: {clean_kwargs}")
         response = llm_client.llm.audio.transcriptions.create(**clean_kwargs)
-        logger.info(f"Transcription successful, response type: {type(response)}")
+        logger.info(f"Transcription successful with {model}")
 
         # Extract the text from the response object if it's not already a string
         transcription_text = (
             response.text if hasattr(response, "text") else str(response)
         )
-    except Exception as e:
-        logger.exception(
-            f"OpenAI transcription failed with error type {type(e)}: {str(e)}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Transcription error: {str(e)}",
+
+        return TranscriptionResponse(
+            model=model,
+            language=language,
+            transcription=transcription_text,
         )
 
-    return TranscriptionResponse(
-        model=model,
-        language=language,
-        transcription=transcription_text,
-    )
+    except Exception as e:
+        error_str = str(e).lower()
+
+        # Check if it's a format error and we're using gpt-4o models
+        if (
+            "unsupported_format" in error_str or "format you provided" in error_str
+        ) and model.startswith("gpt-4o"):
+            logger.warning(
+                f"Format error with {model}, falling back to whisper-1: {str(e)}"
+            )
+
+            # Reset the file pointer for retry
+            audio_file.seek(0)
+
+            # Retry with whisper-1
+            fallback_kwargs = clean_kwargs.copy()
+            fallback_kwargs["model"] = "whisper-1"
+
+            try:
+                logger.info(f"Retrying transcription with whisper-1")
+                response = llm_client.llm.audio.transcriptions.create(**fallback_kwargs)
+                logger.info(f"Transcription successful with whisper-1 fallback")
+
+                transcription_text = (
+                    response.text if hasattr(response, "text") else str(response)
+                )
+
+                return TranscriptionResponse(
+                    model="whisper-1",  # Return the actual model used
+                    language=language,
+                    transcription=transcription_text,
+                )
+
+            except Exception as fallback_error:
+                logger.exception(
+                    f"Whisper-1 fallback also failed: {str(fallback_error)}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail=f"Transcription failed with both {model} and whisper-1: {str(fallback_error)}",
+                )
+        else:
+            logger.exception(
+                f"OpenAI transcription failed with error type {type(e)}: {str(e)}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Transcription error: {str(e)}",
+            )
