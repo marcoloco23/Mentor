@@ -1,7 +1,9 @@
 import React, { RefObject } from 'react';
-import { StyleSheet, useColorScheme, Keyboard, GestureResponderHandlers } from 'react-native';
+import { StyleSheet, useColorScheme, Keyboard, GestureResponderHandlers, View } from 'react-native';
 import { KeyboardAwareFlatList } from 'react-native-keyboard-aware-scroll-view';
+import { ActivityIndicator, Text } from 'react-native-paper';
 import ChatBubble, { Message } from './ChatBubble';
+import { getTheme } from '../utils/theme';
 
 /**
  * Props for MessageList component.
@@ -12,6 +14,9 @@ export interface MessageListProps {
   onBubblePress?: (message: Message) => void;
   onBubbleLongPress?: (message: Message) => void;
   panHandlers?: GestureResponderHandlers;
+  onLoadMore?: () => void;
+  loadingMore?: boolean;
+  hasMoreMessages?: boolean;
 }
 
 /**
@@ -23,8 +28,30 @@ const MessageList: React.FC<MessageListProps> = ({
   onBubblePress,
   onBubbleLongPress,
   panHandlers,
+  onLoadMore,
+  loadingMore = false,
+  hasMoreMessages = true,
 }) => {
   const scheme = useColorScheme();
+  const theme = getTheme(scheme);
+
+  const renderFooter = () => {
+    if (loadingMore) {
+      return (
+        <View style={styles.loadingFooter}>
+          <ActivityIndicator size="small" color={theme.primary} />
+        </View>
+      );
+    }
+    
+    return null;
+  };
+
+  const handleEndReached = () => {
+    if (hasMoreMessages && !loadingMore && onLoadMore) {
+      onLoadMore();
+    }
+  };
 
   return (
     <KeyboardAwareFlatList
@@ -44,6 +71,9 @@ const MessageList: React.FC<MessageListProps> = ({
         scheme === 'dark' && styles.listDark,
       ]}
       extraHeight={80}
+      onEndReached={handleEndReached}
+      onEndReachedThreshold={0.3}
+      ListFooterComponent={renderFooter}
       {...(panHandlers || {})}
     />
   );
@@ -52,6 +82,11 @@ const MessageList: React.FC<MessageListProps> = ({
 const styles = StyleSheet.create({
   list: { padding: 12, gap: 6 },
   listDark: {}, // Extend for dark mode if needed
+  loadingFooter: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default MessageList; 

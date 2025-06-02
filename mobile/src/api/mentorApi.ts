@@ -87,15 +87,49 @@ export async function streamMessage(
 /**
  * Gets chat log history from the backend.
  * @param userId Optional user ID to retrieve specific user's chat logs
+ * @param limit Optional limit on number of messages to return
+ * @param offset Optional offset for pagination (messages to skip from end)
  * @returns Array of chat log messages
  */
-export async function getChatLog(userId?: string): Promise<ChatLogMessage[]> {
-  // Don't append user_id param if it's "default" or undefined
-  const url = userId && userId !== "default"
-    ? `${API_BASE_URL}/chatlog?user_id=${encodeURIComponent(userId)}`
-    : `${API_BASE_URL}/chatlog`;
-  const res = await axios.get<ChatLogMessage[]>(url);
+export async function getChatLog(
+  userId?: string, 
+  limit?: number, 
+  offset?: number
+): Promise<ChatLogMessage[]> {
+  // Build URL with parameters
+  const url = new URL(`${API_BASE_URL}/chatlog`);
+  
+  // Add user_id param if provided and not "default"
+  if (userId && userId !== "default") {
+    url.searchParams.append('user_id', userId);
+  }
+  
+  // Add pagination parameters if provided
+  if (limit !== undefined) {
+    url.searchParams.append('limit', limit.toString());
+  }
+  
+  if (offset !== undefined) {
+    url.searchParams.append('offset', offset.toString());
+  }
+  
+  const res = await axios.get<ChatLogMessage[]>(url.toString());
   return res.data;
+}
+
+/**
+ * Loads more (older) messages for pagination.
+ * @param userId Optional user ID to retrieve specific user's chat logs
+ * @param offset Number of messages to skip from the end 
+ * @param limit Number of messages to load (default: 20)
+ * @returns Array of older chat log messages
+ */
+export async function loadMoreMessages(
+  userId?: string,
+  offset: number = 0,
+  limit: number = 20
+): Promise<ChatLogMessage[]> {
+  return getChatLog(userId, limit, offset);
 }
 
 /**

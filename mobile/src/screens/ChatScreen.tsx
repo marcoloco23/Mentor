@@ -14,9 +14,9 @@ import {
   PanResponderGestureState,
   TouchableOpacity,
 } from 'react-native';
-import { Text, IconButton } from 'react-native-paper';
+import { Text, IconButton, ActivityIndicator } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { streamMessage, getChatLog, ChatLogMessage } from '../api/mentorApi';
+import { streamMessage, getChatLog, ChatLogMessage, loadMoreMessages } from '../api/mentorApi';
 import MessageList from '../components/MessageList';
 import Composer from '../components/Composer';
 import Sidebar from '../components/Sidebar';
@@ -44,8 +44,13 @@ const ChatScreen: React.FC = () => {
   const [userId, setUserId] = useState<string>('default');
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>('system');
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [allMessagesLoaded, setAllMessagesLoaded] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
 
   const flatListRef = useRef<any>(null);
+  const isLoadingInitialRef = useRef(false);
   const systemScheme = useColorScheme();
   
   // Determine effective theme based on mode selection
@@ -75,16 +80,30 @@ const ChatScreen: React.FC = () => {
   }, [userId]);
 
   const loadChatLog = async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingInitialRef.current) {
+      return;
+    }
+    
+    isLoadingInitialRef.current = true;
+    setInitialLoading(true);
+    
     try {
-      const log: ChatLogMessage[] = await getChatLog(userId);
-      setMessages(
-        log.map((m, i) => ({
-          id: `${i}-${m.role}`,
-          role: m.role,
-          text: m.content,
-          ts: new Date(m.timestamp).getTime(),
-        }))
-      );
+      // Use consistent pagination parameters from the start
+      const log: ChatLogMessage[] = await getChatLog(userId, 20, 0); // Load first 20 messages with offset 0
+      
+      const newMessages = log.map((m, i) => ({
+        id: `${Date.now()}-${i}-${m.role}`,
+        role: m.role,
+        text: m.content,
+        ts: new Date(m.timestamp).getTime(),
+      }));
+      
+      setMessages(newMessages);
+      
+      // Reset pagination state
+      setHasMoreMessages(log.length >= 20); // Assume there might be more if we got a full batch
+      setAllMessagesLoaded(false);
       
       // If there are no messages for this user, send an initial message to start the conversation
       if (log.length === 0) {
@@ -95,6 +114,50 @@ const ChatScreen: React.FC = () => {
     } catch (e) {
       console.error('Failed to fetch chat log:', e);
       alert('Failed to fetch chat log: ' + e);
+    } finally {
+      isLoadingInitialRef.current = false;
+      setInitialLoading(false);
+    }
+  };
+
+  const loadMoreOlderMessages = async () => {
+    // Don't load more if we're still doing initial loading, already loading more, no more messages, or all loaded
+    if (loadingMore || !hasMoreMessages || allMessagesLoaded || initialLoading || isLoadingInitialRef.current) {
+      return;
+    }
+
+    setLoadingMore(true);
+    
+    try {
+      const currentOffset = messages.length;
+      const olderMessages: ChatLogMessage[] = await loadMoreMessages(userId, currentOffset, 20);
+      
+      if (olderMessages.length === 0) {
+        setHasMoreMessages(false);
+        setAllMessagesLoaded(true);
+      } else {
+        // Prepend older messages to the beginning of the list
+        const timestamp = Date.now();
+        const newMessages = olderMessages.map((m, i) => ({
+          id: `${timestamp}-older-${currentOffset + i}-${m.role}`,
+          role: m.role,
+          text: m.content,
+          ts: new Date(m.timestamp).getTime(),
+        }));
+        
+        setMessages((prev) => [...newMessages, ...prev]);
+        
+        // Check if we got fewer messages than requested, indicating we've reached the end
+        if (olderMessages.length < 20) {
+          setHasMoreMessages(false);
+          setAllMessagesLoaded(true);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load more messages:', e);
+      alert('Failed to load more messages: ' + e);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -122,6 +185,12 @@ const ChatScreen: React.FC = () => {
     if (newUserId !== userId) {
       setUserId(newUserId);
       setMessages([]);
+      // Reset pagination state
+      setHasMoreMessages(true);
+      setAllMessagesLoaded(false);
+      setLoadingMore(false);
+      setInitialLoading(false);
+      isLoadingInitialRef.current = false;
     }
     setSidebarVisible(false);
   };
@@ -278,6 +347,9 @@ const ChatScreen: React.FC = () => {
                 await Clipboard.setStringAsync(msg.text);
               }
             }}
+            onLoadMore={loadMoreOlderMessages}
+            loadingMore={loadingMore}
+            hasMoreMessages={hasMoreMessages}
           />
           <Composer
             value={input}
