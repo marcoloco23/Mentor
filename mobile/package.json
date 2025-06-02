@@ -14,6 +14,7 @@
     "axios": "^1.9.0",
     "expo": "~53.0.8",
     "expo-audio": "~0.4.4",
+    "expo-blur": "^14.1.4",
     "expo-clipboard": "^7.1.4",
     "expo-constants": "^17.1.6",
     "expo-haptics": "^14.1.4",
@@ -25,6 +26,7 @@
     "react-native-markdown-display": "^7.0.2",
     "react-native-paper": "^5.14.0",
     "react-native-reanimated": "^3.17.5",
+    "react-native-safe-area-context": "^5.4.1",
     "react-native-sse": "^1.2.1",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "^0.20.0"

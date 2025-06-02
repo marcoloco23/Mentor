@@ -208,18 +208,29 @@ class MemoryManager:
         logger.debug(f"Message appended successfully for user_id: {user_id}")
 
     def fetch_recent(
-        self, user_id: str, k: int = WINDOW_MESSAGES, use_time_filtering: bool = True
+        self,
+        user_id: str,
+        k: int = WINDOW_MESSAGES,
+        use_time_filtering: bool = True,
+        offset: int = 0,
+        limit: Optional[int] = None,
     ) -> List[Dict[str, str]]:
         """
         Return the most recent messages, optionally filtered by time gaps.
 
         Args:
             user_id: The user identifier
-            k: Maximum number of messages to return
+            k: Maximum number of messages to return (when not using pagination)
             use_time_filtering: Whether to apply smart time-based filtering
+            offset: Number of messages to skip from the end (for pagination)
+            limit: Maximum number of messages to return (overrides k when provided)
         """
+        # Use limit if provided, otherwise fall back to k
+        actual_limit = limit if limit is not None else k
+
         logger.info(
-            f"Fetching recent messages for user_id: {user_id}, k={k}, time_filtering={use_time_filtering}"
+            f"Fetching recent messages for user_id: {user_id}, k={k}, offset={offset}, "
+            f"limit={actual_limit}, time_filtering={use_time_filtering}"
         )
         data = self._load_log()
         messages = data.get(user_id, [])
@@ -228,11 +239,26 @@ class MemoryManager:
             logger.info(f"No messages found for user_id: {user_id}")
             return []
 
-        # Get the raw messages first
-        raw_messages = messages[-k:]  # Get last k messages
+        # When using pagination (offset > 0), we want to get older messages
+        # Calculate the slice indices for pagination
+        total_messages = len(messages)
 
-        # Apply time-based filtering if enabled
-        if use_time_filtering:
+        if offset >= total_messages:
+            logger.info(
+                f"Offset {offset} >= total messages {total_messages}, returning empty"
+            )
+            return []
+
+        # For pagination, we slice from the end backwards
+        start_index = max(0, total_messages - offset - actual_limit)
+        end_index = total_messages - offset
+
+        # Get the requested slice
+        raw_messages = messages[start_index:end_index]
+
+        # Apply time-based filtering if enabled and not using pagination
+        # When using pagination, we typically want all messages in the range
+        if use_time_filtering and offset == 0:
             filtered_messages = filter_messages_by_time_gaps(raw_messages)
             logger.info(
                 f"Time filtering: {len(raw_messages)} -> {len(filtered_messages)} messages"
