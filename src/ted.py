@@ -104,16 +104,18 @@ class Ted:
         """
         logger.info(f"Received user message: {user_msg}")
 
-        # Retrieve memories and format recent messages
+        # Retrieve memories and format recent messages with time-based filtering
         mem_text = self.memory.retrieve(user_msg, self.user_id, self.k, self.version)
-        recent_messages = self.memory.fetch_recent(self.user_id)
+        recent_messages = self.memory.fetch_recent(
+            self.user_id, use_time_filtering=True
+        )
 
         # Filter out timestamps for LLM consumption
         llm_messages = [
             {"role": msg["role"], "content": msg["content"]} for msg in recent_messages
         ]
 
-        # Generate reply
+        # Generate reply with enhanced context
         reply = self.llm.chat(
             user_msg=user_msg,
             mem_text=mem_text,
@@ -142,16 +144,18 @@ class Ted:
         """
         logger.info(f"Streaming reply for: {user_msg!r}")
 
-        # Retrieve memories and format recent messages
+        # Retrieve memories and format recent messages with time-based filtering
         mem_text = self.memory.retrieve(user_msg, self.user_id, self.k, self.version)
-        recent_messages = self.memory.fetch_recent(self.user_id)
+        recent_messages = self.memory.fetch_recent(
+            self.user_id, use_time_filtering=True
+        )
 
         # Filter out timestamps for LLM consumption
         llm_messages = [
             {"role": msg["role"], "content": msg["content"]} for msg in recent_messages
         ]
 
-        # Stream reply
+        # Stream reply with enhanced context
         chunks = []
         for token in self.llm.chat_stream(
             user_msg=user_msg,

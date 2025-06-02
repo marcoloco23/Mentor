@@ -1,115 +1,210 @@
 """
-Encapsulates LLM chat logic for the Ted agent.
-Provides an LLMClient class for generating and streaming chat completions using an LLM backend.
+OpenAI LLM client for Ted. Handles chat completions and streaming responses.
 """
 
-from openai import OpenAI
+import os
 import logging
-from typing import Any, Optional, List, Dict
+from typing import List, Dict, Any, Iterator
+from openai import OpenAI
 
-from src.config import LLM_MODEL, DEFAULT_TEMPERATURE, ASSISTANT_NAME, DEFAULT_USER_NAME
-from src.prompts import SYSTEM_TEMPLATE
-
+from .prompts import SYSTEM_TEMPLATE
+from .config import LLM_MODEL, DEFAULT_TEMPERATURE
+from .utils import get_time_context, detect_conversation_resumption
 
 logger = logging.getLogger("TedLLM")
 
 
 class LLMClient:
     """
-    Handles LLM chat completions for the Ted agent.
+    OpenAI LLM client wrapper that handles chat completions for the Ted agent.
+
+    This class manages interactions with OpenAI's chat completion API, including
+    both standard and streaming responses. It formats prompts according to Ted's
+    personality and includes time-aware context.
 
     Attributes:
-        llm (OpenAI): The OpenAI client instance for chat completions.
+        client (OpenAI): The OpenAI client instance.
+        model (str): The model name to use for completions.
+        temperature (float): The temperature setting for response generation.
     """
 
-    def __init__(self, llm_client: OpenAI):
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str = LLM_MODEL,
+        temperature: float = DEFAULT_TEMPERATURE,
+    ):
         """
-        Initialize the LLMClient.
+        Initialize the LLM client.
 
         Args:
-            llm_client (OpenAI): The OpenAI client instance.
+            api_key (str | None, optional): OpenAI API key. If None, will use environment variable.
+            model (str, optional): Model name. Defaults to LLM_MODEL.
+            temperature (float, optional): Temperature for response generation. Defaults to DEFAULT_TEMPERATURE.
         """
-        self.llm = llm_client
+        self.client = OpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))
+        self.model = model
+        self.temperature = temperature
+        logger.info(
+            f"Initialized LLM client with model={model}, temperature={temperature}"
+        )
+
+    def _format_system_prompt(
+        self,
+        mem_text: str,
+        assistant_name: str,
+        user_name: str,
+        thread: List[Dict[str, str]] | None = None,
+    ) -> str:
+        """
+        Format the system prompt with memories, time context, and conversation awareness.
+
+        Args:
+            mem_text (str): Formatted memory text to include.
+            assistant_name (str): Name of the assistant.
+            user_name (str): Name of the user.
+            thread (List[Dict[str, str]] | None): Recent message thread for context detection.
+
+        Returns:
+            str: The formatted system prompt.
+        """
+        # Get current time context
+        time_context = get_time_context()
+
+        # Detect conversation resumption and build context
+        conversation_context = ""
+        if thread and len(thread) > 0:
+            is_resumption, resumption_hint = detect_conversation_resumption(thread)
+            if is_resumption and resumption_hint:
+                conversation_context = f"<conversation_context>\nNote: This appears to be {resumption_hint}. Consider acknowledging this naturally if appropriate.\n</conversation_context>"
+
+        # Format the complete system prompt
+        return SYSTEM_TEMPLATE.format(
+            assistant_name=assistant_name,
+            user_name=user_name,
+            memories=mem_text or "[no relevant memories found]",
+            time_context=time_context,
+            conversation_context=conversation_context,
+        )
 
     def chat(
         self,
         user_msg: str,
-        mem_text: str,
-        assistant_name: str = ASSISTANT_NAME,
-        user_name: str = DEFAULT_USER_NAME,
-        thread: Optional[List[Dict[str, Any]]] = None,
+        mem_text: str = "",
+        assistant_name: str = "Ted",
+        user_name: str = "User",
+        thread: List[Dict[str, str]] | None = None,
     ) -> str:
         """
-        Generate a reply using the LLM, given the user message, memory text, and optional thread history.
+        Generate a single chat completion response.
 
         Args:
             user_msg (str): The user's message.
-            mem_text (str): The formatted memory text to provide as context.
-            assistant_name (str): The name of the assistant.
-            user_name (str): The name of the user.
-            thread (Optional[List[Dict[str, Any]]], optional): Optional conversation thread history.
+            mem_text (str, optional): Memory context. Defaults to "".
+            assistant_name (str, optional): Assistant's name. Defaults to "Ted".
+            user_name (str, optional): User's name. Defaults to "User".
+            thread (List[Dict[str, str]] | None, optional): Recent message history. Defaults to None.
 
         Returns:
-            str: The assistant's reply.
+            str: The assistant's response.
         """
-        logger.info("Invoking LLM chat completion")
-        prompt = SYSTEM_TEMPLATE.format(
-            memories=mem_text or "[none]",
-            assistant_name=assistant_name,
-            user_name=user_name,
-        )
-        messages = [{"role": "system", "content": prompt}]
+        logger.info(f"Generating chat completion for user message: {user_msg[:50]}...")
+
+        # Build the message sequence
+        messages = [
+            {
+                "role": "system",
+                "content": self._format_system_prompt(
+                    mem_text, assistant_name, user_name, thread
+                ),
+            }
+        ]
+
+        # Add thread messages if provided
         if thread:
             messages.extend(thread)
+
+        # Add the current user message
         messages.append({"role": "user", "content": user_msg})
-        resp = self.llm.chat.completions.create(
-            model=LLM_MODEL, messages=messages, temperature=DEFAULT_TEMPERATURE
-        )
-        logger.info("LLM chat completion received")
-        return resp.choices[0].message.content.strip()
+
+        logger.debug(f"Sending {len(messages)} messages to OpenAI API")
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=self.temperature,
+            )
+
+            reply = response.choices[0].message.content
+            logger.info(f"Received completion: {len(reply)} characters")
+            return reply
+
+        except Exception as e:
+            logger.error(f"Error in chat completion: {str(e)}")
+            raise
 
     def chat_stream(
         self,
         user_msg: str,
-        mem_text: str,
-        assistant_name: str = ASSISTANT_NAME,
-        user_name: str = DEFAULT_USER_NAME,
-        thread: Optional[List[Dict[str, Any]]] = None,
-    ):
+        mem_text: str = "",
+        assistant_name: str = "Ted",
+        user_name: str = "User",
+        thread: List[Dict[str, str]] | None = None,
+    ) -> Iterator[str]:
         """
-        Stream a reply using the LLM, yielding tokens as they arrive. Optionally include thread history.
+        Generate a streaming chat completion response.
 
         Args:
             user_msg (str): The user's message.
-            mem_text (str): The formatted memory text to provide as context.
-            assistant_name (str): The name of the assistant.
-            user_name (str): The name of the user.
-            thread (Optional[List[Dict[str, Any]]], optional): Optional conversation thread history.
+            mem_text (str, optional): Memory context. Defaults to "".
+            assistant_name (str, optional): Assistant's name. Defaults to "Ted".
+            user_name (str, optional): User's name. Defaults to "User".
+            thread (List[Dict[str, str]] | None, optional): Recent message history. Defaults to None.
 
         Yields:
-            str: The next token in the assistant's reply.
+            str: Each token in the assistant's response.
         """
-        logger.info("Invoking LLM chat completion (streaming)")
-        prompt = SYSTEM_TEMPLATE.format(
-            memories=mem_text or "[none]",
-            assistant_name=assistant_name,
-            user_name=user_name,
+        logger.info(
+            f"Starting streaming completion for user message: {user_msg[:50]}..."
         )
-        messages = [{"role": "system", "content": prompt}]
+
+        # Build the message sequence
+        messages = [
+            {
+                "role": "system",
+                "content": self._format_system_prompt(
+                    mem_text, assistant_name, user_name, thread
+                ),
+            }
+        ]
+
+        # Add thread messages if provided
         if thread:
             messages.extend(thread)
+
+        # Add the current user message
         messages.append({"role": "user", "content": user_msg})
 
-        logger.info("Streaming LLM chat completion")
-        logger.debug(messages)
+        logger.debug(f"Streaming {len(messages)} messages to OpenAI API")
 
-        stream = self.llm.chat.completions.create(
-            model=LLM_MODEL,
-            messages=messages,
-            temperature=DEFAULT_TEMPERATURE,
-            stream=True,
-        )
-        for chunk in stream:
-            content = chunk.choices[0].delta.content
-            if content:
-                yield content
+        try:
+            stream = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=self.temperature,
+                stream=True,
+            )
+
+            token_count = 0
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    token = chunk.choices[0].delta.content
+                    token_count += 1
+                    yield token
+
+            logger.info(f"Streaming completed: {token_count} tokens")
+
+        except Exception as e:
+            logger.error(f"Error in streaming completion: {str(e)}")
+            raise

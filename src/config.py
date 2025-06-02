@@ -21,6 +21,17 @@ MIN_SIMILARITY_THRESHOLD: Final[float] = 0.45
 DEFAULT_MEMORIES_COUNT: Final[int] = 5
 WINDOW_MESSAGES: Final[int] = 20  # number of recent messages to include in context
 
+# Time-based filtering configuration
+MESSAGE_FRESHNESS_HOURS: Final[int] = (
+    8  # Messages older than this create a "break" in conversation
+)
+MAX_STALE_MESSAGES: Final[int] = (
+    3  # Max messages to include when conversation is "stale"
+)
+TIME_BREAK_THRESHOLD_HOURS: Final[int] = (
+    4  # Hours gap that indicates a conversation break
+)
+
 # File Paths
 LOG_FILE: Final[str] = "data/chatlog.json"
 

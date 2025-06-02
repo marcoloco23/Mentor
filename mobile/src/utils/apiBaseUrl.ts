@@ -21,5 +21,5 @@ export function getApiBaseUrl(): string {
   // }
 
   // Call ipconfig getifaddr en0 
-  return 'http://192.168.178.46:8000';
+  return 'http://192.168.178.27:8000';
 } 

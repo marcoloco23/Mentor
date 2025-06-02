@@ -20,7 +20,7 @@ The `gpt-4o-transcribe` model was returning "unsupported format" errors for WAV 
 ```python
 # Key changes in transcribe_audio endpoint:
 try:
-    response = llm_client.llm.audio.transcriptions.create(**clean_kwargs)
+    response = llm_client.client.audio.transcriptions.create(**clean_kwargs)
     # ... success handling
 except Exception as e:
     error_str = str(e).lower()
@@ -30,7 +30,7 @@ except Exception as e:
         # Fallback to whisper-1
         fallback_kwargs = clean_kwargs.copy()
         fallback_kwargs["model"] = "whisper-1"
-        response = llm_client.llm.audio.transcriptions.create(**fallback_kwargs)
+        response = llm_client.client.audio.transcriptions.create(**fallback_kwargs)
 ```
 
 ### 2. Mobile App Changes (`AudioRecorder.tsx`)

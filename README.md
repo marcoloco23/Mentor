@@ -7,7 +7,7 @@
 # Ted: Your Lifelong AI Companion
 
 <h3>
-<a href="#-architecture">Architecture</a> | <a href="#-quickstart">Quickstart</a> | <a href="#-features">Features</a> | <a href="#-roadmap">Roadmap</a> | <a href="#-contributing">Contributing</a> | <a href="#-license">License</a>
+<a href="#-architecture">Architecture</a> | <a href="#-quickstart">Quickstart</a> | <a href="#-features">Features</a> | <a href="#-documentation">Documentation</a> | <a href="#-roadmap">Roadmap</a> | <a href="#-contributing">Contributing</a> | <a href="#-license">License</a>
 </h3>
 
 </div>
@@ -98,7 +98,20 @@ MEM0_API_KEY=mem-…
 
 ---
 
-## 📚 Key Files
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/) folder:
+
+- **[Documentation Index](docs/README.md)** - Complete guide to all documentation
+- **[Source Code Documentation](docs/SRC_README.md)** - Technical implementation details
+- **[Refactoring Guide](docs/REFACTORING_GUIDE.md)** - Recent architecture improvements
+- **[Transcription Improvements](docs/TRANSCRIPTION_IMPROVEMENTS.md)** - Audio processing enhancements
+
+For new developers, we recommend following the [reading order](docs/README.md#-reading-order) outlined in the documentation index.
+
+---
+
+## 📝 Key Files
 
 | Path              | Description                          |
 |-------------------|--------------------------------------|
@@ -106,6 +119,7 @@ MEM0_API_KEY=mem-…
 | `src/memory.py`   | Retrieval, re‑ranking, async persistence |
 | `src/llm.py`      | Thin wrapper around the OpenAI client |
 | `app.py`          | Streamlit UI                         |
+| `main.py`         | FastAPI backend for mobile app      |
 
 ---
 

@@ -20,6 +20,7 @@ from src.config import (
     WINDOW_MESSAGES,
     LOG_FILE,
 )
+from src.utils import filter_messages_by_time_gaps
 
 _DUPLICATE_REGEX = re.compile(r"\W+")
 _log_lock = Lock()
@@ -207,13 +208,40 @@ class MemoryManager:
         logger.debug(f"Message appended successfully for user_id: {user_id}")
 
     def fetch_recent(
-        self, user_id: str, k: int = WINDOW_MESSAGES
+        self, user_id: str, k: int = WINDOW_MESSAGES, use_time_filtering: bool = True
     ) -> List[Dict[str, str]]:
-        """Return the *k* most-recent messages (oldest first)."""
-        logger.info(f"Fetching {k} recent messages for user_id: {user_id}")
+        """
+        Return the most recent messages, optionally filtered by time gaps.
+
+        Args:
+            user_id: The user identifier
+            k: Maximum number of messages to return
+            use_time_filtering: Whether to apply smart time-based filtering
+        """
+        logger.info(
+            f"Fetching recent messages for user_id: {user_id}, k={k}, time_filtering={use_time_filtering}"
+        )
         data = self._load_log()
-        messages = data.get(user_id, [])[-k:]
-        logger.info(f"Found {len(messages)} messages for user_id: {user_id}")
+        messages = data.get(user_id, [])
+
+        if not messages:
+            logger.info(f"No messages found for user_id: {user_id}")
+            return []
+
+        # Get the raw messages first
+        raw_messages = messages[-k:]  # Get last k messages
+
+        # Apply time-based filtering if enabled
+        if use_time_filtering:
+            filtered_messages = filter_messages_by_time_gaps(raw_messages)
+            logger.info(
+                f"Time filtering: {len(raw_messages)} -> {len(filtered_messages)} messages"
+            )
+        else:
+            filtered_messages = raw_messages
+            logger.info(
+                f"No time filtering applied, using {len(filtered_messages)} messages"
+            )
 
         result = [
             {
@@ -221,7 +249,7 @@ class MemoryManager:
                 "content": msg["content"],
                 "timestamp": msg.get("timestamp", datetime.now(UTC).isoformat()),
             }
-            for msg in messages
+            for msg in filtered_messages
         ]
         return result
 
