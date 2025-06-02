@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Text, Switch, Button, Menu, Divider, TextInput, Modal, Portal, Avatar, IconButton } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { streamMessage, getChatLog, ChatLogMessage } from '../api/mentorApi';
 import MessageList from '../components/MessageList';
 import Composer from '../components/Composer';
@@ -32,7 +33,7 @@ const USER_PROFILES = {
 };
 
 // Initial message to send when starting a new chat with no history
-const INITIAL_MESSAGE = "I’m here for you. Whenever you're ready, we’ll begin.";
+const INITIAL_MESSAGE = "I'm here for you. Whenever you're ready, we'll begin.";
 
 const ChatScreen: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -47,6 +48,7 @@ const ChatScreen: React.FC = () => {
   const flatListRef = useRef<any>(null);
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
+  const insets = useSafeAreaInsets();
 
   /*────────────────── helpers ──────────────────*/
   const scrollToEnd = () => {
@@ -182,6 +184,13 @@ const ChatScreen: React.FC = () => {
     }
   };
 
+  /*────────────────── attachment handling ──────────────────*/
+  const handleAttachment = () => {
+    // Placeholder for attachment functionality
+    // This could open a file picker, image gallery, etc.
+    alert('Attachment functionality can be implemented here');
+  };
+
   /*────────────────── UI ──────────────────*/
   // PanResponder for gesture-based keyboard dismissal
   const panResponder = PanResponder.create({
@@ -204,7 +213,7 @@ const ChatScreen: React.FC = () => {
   });
 
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
+    <View style={[styles.root, { backgroundColor: theme.background, paddingTop: insets.top }]}>
       {/* Enhanced header row with user profile and test mode */}
       <View style={[styles.headerRow, { backgroundColor: theme.toggleBackground }]}>
         <View style={styles.userSelector}>
@@ -306,10 +315,10 @@ const ChatScreen: React.FC = () => {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={20}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <View style={styles.flex} {...panResponder.panHandlers}>
+        <View style={[styles.flex, { paddingBottom: insets.bottom }]} {...panResponder.panHandlers}>
           <MessageList
             messages={messages}
             flatListRef={flatListRef}
@@ -336,10 +345,11 @@ const ChatScreen: React.FC = () => {
             disabled={typing}
             typing={typing}
             onKeyPress={handleKeyPress}
+            onAttachment={handleAttachment}
           />
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 

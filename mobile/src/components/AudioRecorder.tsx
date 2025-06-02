@@ -16,13 +16,15 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscribe, disabled = 
   const [isLoading, setIsLoading] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
+  
+  // Enhanced animations
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
-
-  // Animated values for icon cross-fade
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+  const rippleAnim = React.useRef(new Animated.Value(0)).current;
   const micOpacity = React.useRef(new Animated.Value(1)).current;
   const stopOpacity = React.useRef(new Animated.Value(0)).current;
 
-  // Expo Audio hook - using default HIGH_QUALITY preset
+  // Expo Audio hook
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   // Permission check on mount
@@ -48,17 +50,52 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscribe, disabled = 
     return () => { if (timer) clearInterval(timer); };
   }, [isRecording]);
 
-  // Animate icon cross-fade
+  // Enhanced recording animations
+  useEffect(() => {
+    if (isRecording) {
+      // Start subtle pulsing animation
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      pulseAnimation.start();
+
+      return () => {
+        pulseAnimation.stop();
+      };
+    } else {
+      pulseAnim.setValue(1);
+      rippleAnim.setValue(0);
+    }
+  }, [isRecording]);
+
+  // Animate icon cross-fade with improved timing
   useEffect(() => {
     Animated.parallel([
       Animated.timing(micOpacity, {
         toValue: isRecording ? 0 : 1,
-        duration: 180,
+        duration: 200,
         useNativeDriver: true,
       }),
       Animated.timing(stopOpacity, {
         toValue: isRecording ? 1 : 0,
-        duration: 180,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: isRecording ? 0.95 : 1,
+        duration: 200,
         useNativeDriver: true,
       }),
     ]).start();
@@ -158,20 +195,28 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscribe, disabled = 
     }
   };
 
-  const buttonSize = 48;
-
   if (permissionGranted === null) {
-    return <ActivityIndicator animating={true} color={theme.colors.primary} />;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator animating={true} color={theme.colors.primary} size="small" />
+      </View>
+    );
   }
 
+  const buttonSize = 32;
+
   return (
-    <View style={[styles.container, { flexDirection: 'column' }]}>
+    <View style={styles.container}>
       <TouchableOpacity
         onPress={handlePress}
         disabled={!!disabled || !!isLoading || permissionGranted === false}
-        style={styles.touchableArea}
-        activeOpacity={0.6}
-        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+        style={[
+          styles.touchableArea,
+          {
+            opacity: disabled || permissionGranted === false ? 0.4 : 1,
+          }
+        ]}
+        activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={isRecording ? "Stop recording" : "Start recording"}
       >
@@ -179,46 +224,75 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscribe, disabled = 
           style={[
             styles.buttonContainer,
             {
-              backgroundColor: isRecording ? 'rgba(255, 59, 48, 0.1)' : 'transparent',
               width: buttonSize,
               height: buttonSize,
               borderRadius: buttonSize / 2,
-              position: 'relative',
-              overflow: 'hidden',
-              justifyContent: 'center',
-              alignItems: 'center',
+              backgroundColor: isRecording 
+                ? theme.colors.errorContainer
+                : 'transparent',
+              transform: [
+                { scale: scaleAnim },
+                { scale: pulseAnim },
+              ],
             }
           ]}
         >
           {/* Microphone Icon */}
           <Animated.View
             style={[
-              styles.iconAbsolute,
+              styles.iconContainer,
               { opacity: micOpacity }
             ]}
-            pointerEvents={isRecording ? 'none' : 'auto'}
           >
-            <MaterialCommunityIcons name="microphone" size={28} color={theme.colors.primary} />
+            <MaterialCommunityIcons 
+              name="microphone" 
+              size={18} 
+              color={disabled ? theme.colors.outline : theme.colors.primary} 
+            />
           </Animated.View>
-          {/* Stop Icon */}
+
+          {/* Recording Icon */}
           <Animated.View
             style={[
-              styles.iconAbsolute,
+              styles.iconContainer,
               { opacity: stopOpacity }
             ]}
-            pointerEvents={isRecording ? 'auto' : 'none'}
           >
-            <MaterialCommunityIcons name="stop-circle" size={28} color={theme.colors.error} />
+            <MaterialCommunityIcons 
+              name="stop" 
+              size={16} 
+              color={theme.colors.error} 
+            />
           </Animated.View>
+
+          {/* Loading overlay */}
           {isLoading && (
-            <View style={styles.loadingOverlay} pointerEvents="none">
-              <ActivityIndicator animating={true} size={36} color={theme.colors.primary} style={{ opacity: 0.85 }} />
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator 
+                animating={true} 
+                size="small" 
+                color={theme.colors.primary} 
+              />
             </View>
           )}
         </Animated.View>
       </TouchableOpacity>
+
+      {/* Compact recording indicator */}
       {isRecording && (
-        <Text style={[styles.timerText, { color: theme.colors.error }]}> {formatTime(recordingDuration)} </Text>
+        <View style={[styles.recordingIndicator, { backgroundColor: theme.colors.errorContainer }]}>
+          <Animated.View 
+            style={[
+              styles.recordingDot,
+              {
+                opacity: pulseAnim.interpolate({
+                  inputRange: [1, 1.05],
+                  outputRange: [0.7, 1],
+                }),
+              }
+            ]} 
+          />
+        </View>
       )}
     </View>
   );
@@ -226,38 +300,50 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscribe, disabled = 
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  loadingContainer: {
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
   touchableArea: {
-    width: 60,
-    height: 60,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 100,
+    position: 'relative',
   },
   buttonContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
-  iconAbsolute: {
+  iconContainer: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  timerText: {
-    marginTop: 6,
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
+  recordingIndicator: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  loadingContainer: {
+  recordingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#f44336',
   },
   loadingOverlay: {
     position: 'absolute',
@@ -265,11 +351,10 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.18)',
-    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 999,
   },
 });
 
