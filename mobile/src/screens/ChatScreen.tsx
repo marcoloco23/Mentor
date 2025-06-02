@@ -14,11 +14,12 @@ import {
   PanResponderGestureState,
   TouchableOpacity,
 } from 'react-native';
-import { Text, Switch, Button, Menu, Divider, TextInput, Modal, Portal, Avatar, IconButton } from 'react-native-paper';
+import { Text, IconButton } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { streamMessage, getChatLog, ChatLogMessage } from '../api/mentorApi';
 import MessageList from '../components/MessageList';
 import Composer from '../components/Composer';
+import Sidebar from '../components/Sidebar';
 import type { Message } from '../components/ChatBubble';
 import { getTheme } from '../utils/theme';
 import * as Haptics from 'expo-haptics';
@@ -41,13 +42,15 @@ const ChatScreen: React.FC = () => {
   const [typing, setTyping] = useState(false);
   const [isTestMode, setIsTestMode] = useState(true);
   const [userId, setUserId] = useState<string>('default');
-  const [userMenuVisible, setUserMenuVisible] = useState(false);
-  const [customUserDialogVisible, setCustomUserDialogVisible] = useState(false);
-  const [customUserId, setCustomUserId] = useState('');
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [themeMode, setThemeMode] = useState<'system' | 'light' | 'dark'>('system');
 
   const flatListRef = useRef<any>(null);
-  const scheme = useColorScheme();
-  const theme = getTheme(scheme);
+  const systemScheme = useColorScheme();
+  
+  // Determine effective theme based on mode selection
+  const effectiveScheme = themeMode === 'system' ? systemScheme : themeMode;
+  const theme = getTheme(effectiveScheme);
   const insets = useSafeAreaInsets();
 
   /*────────────────── helpers ──────────────────*/
@@ -115,24 +118,17 @@ const ChatScreen: React.FC = () => {
     setTyping(false);
   };
 
-  const switchUser = (newUserId: string) => {
+  const handleUserChange = (newUserId: string) => {
     if (newUserId !== userId) {
       setUserId(newUserId);
       setMessages([]);
     }
-    setUserMenuVisible(false);
+    setSidebarVisible(false);
   };
 
-  const handleCustomUserSubmit = () => {
-    if (customUserId.trim()) {
-      switchUser(customUserId.trim());
-      setCustomUserId('');
-      setCustomUserDialogVisible(false);
-    }
-  };
-
-  const getUserProfile = (id: string) => {
-    return USER_PROFILES[id as keyof typeof USER_PROFILES] || { name: id, avatar: '👤' };
+  const handleSidebarToggle = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSidebarVisible(!sidebarVisible);
   };
 
   /*────────────────── send & stream ──────────────────*/
@@ -214,104 +210,49 @@ const ChatScreen: React.FC = () => {
 
   return (
     <View style={[styles.root, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      {/* Enhanced header row with user profile and test mode */}
-      <View style={[styles.headerRow, { backgroundColor: theme.toggleBackground }]}>
-        <View style={styles.userSelector}>
-          <Menu
-            visible={userMenuVisible}
-            onDismiss={() => setUserMenuVisible(false)}
-            anchor={
-              <TouchableOpacity 
-                onPress={() => setUserMenuVisible(true)}
-                style={styles.userButton}
-              >
-                <View style={styles.userProfile}>
-                  <Text style={[styles.userAvatar, { color: theme.text }]}>
-                    {getUserProfile(userId).avatar}
-                  </Text>
-                  <View style={styles.userInfo}>
-                    <Text style={[styles.userName, { color: theme.text }]}>
-                      {getUserProfile(userId).name}
-                    </Text>
-                    <Text style={[styles.userIdText, { color: theme.textSecondary }]}>
-                      ID: {userId}
-                    </Text>
-                  </View>
-                  <IconButton 
-                    icon="chevron-down" 
-                    size={20} 
-                    iconColor={theme.textSecondary}
-                  />
-                </View>
-              </TouchableOpacity>
-            }
-          >
-            {Object.entries(USER_PROFILES).map(([id, profile]) => (
-              <Menu.Item
-                key={id}
-                onPress={() => switchUser(id)}
-                title={profile.name}
-                leadingIcon={() => (
-                  <Text style={styles.menuAvatar}>{profile.avatar}</Text>
-                )}
-                style={userId === id ? styles.activeMenuItem : undefined}
-                titleStyle={userId === id ? styles.activeMenuItemText : undefined}
-              />
-            ))}
-            <Divider style={styles.menuDivider} />
-            <Menu.Item 
-              onPress={() => {
-                setUserMenuVisible(false);
-                setCustomUserDialogVisible(true);
-              }} 
-              title="Custom User ID..." 
-              leadingIcon="account-plus-outline"
-            />
-          </Menu>
-        </View>
-
-        <View style={styles.testModeToggle}>
-          <Text style={[styles.toggleLabel, { color: theme.textSecondary }]}>Test Mode</Text>
-          <Switch
-            value={isTestMode}
-            onValueChange={setIsTestMode}
-            accessibilityLabel="Toggle test mode"
-            accessible
+      {/* Clean minimal header with just hamburger menu */}
+      <View style={[styles.headerRow, { backgroundColor: theme.background, borderBottomColor: theme.border + '15' }]}>
+        <TouchableOpacity
+          onPress={handleSidebarToggle}
+          style={styles.menuButton}
+          activeOpacity={0.6}
+        >
+          <IconButton 
+            icon="menu" 
+            size={24} 
+            iconColor={theme.text}
+            style={styles.menuIcon}
           />
-          <Text style={[styles.toggleState, { color: theme.text }]}>{isTestMode ? 'ON' : 'OFF'}</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.headerCenter}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
+            Ted
+          </Text>
+          {isTestMode && (
+            <View style={[styles.testBadge, { backgroundColor: theme.primary + '20' }]}>
+              <Text style={[styles.testBadgeText, { color: theme.primary }]}>
+                TEST
+              </Text>
+            </View>
+          )}
         </View>
+        
+        <View style={styles.headerRight} />
       </View>
 
-      <Portal>
-        <Modal
-          visible={customUserDialogVisible}
-          onDismiss={() => setCustomUserDialogVisible(false)}
-          contentContainerStyle={[styles.modalContent, { backgroundColor: theme.background }]}
-        >
-          <Text style={[styles.modalTitle, { color: theme.text }]}>Enter Custom User ID</Text>
-          <TextInput
-            value={customUserId}
-            onChangeText={setCustomUserId}
-            mode="outlined"
-            style={styles.modalInput}
-            autoFocus
-            returnKeyType="done"
-            onSubmitEditing={handleCustomUserSubmit}
-            placeholder="Enter a unique identifier"
-            right={<TextInput.Icon icon="account-check" />}
-          />
-          <View style={styles.modalButtons}>
-            <Button onPress={() => setCustomUserDialogVisible(false)}>Cancel</Button>
-            <Button 
-              onPress={handleCustomUserSubmit} 
-              mode="contained" 
-              disabled={!customUserId.trim()}
-            >
-              Switch
-            </Button>
-          </View>
-        </Modal>
-      </Portal>
+      {/* Sidebar */}
+      <Sidebar
+        visible={sidebarVisible}
+        onClose={() => setSidebarVisible(false)}
+        userId={userId}
+        onUserChange={handleUserChange}
+        isTestMode={isTestMode}
+        onTestModeChange={setIsTestMode}
+        themeMode={themeMode}
+        onThemeModeChange={setThemeMode}
+        effectiveScheme={effectiveScheme}
+      />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -359,73 +300,44 @@ const styles = StyleSheet.create({
   headerRow: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    padding: 12,
-    justifyContent: 'space-between',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  userSelector: {
-    flex: 1,
-  },
-  userButton: {
-    paddingVertical: 4,
     paddingHorizontal: 4,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    minHeight: 56,
   },
-  userProfile: {
-    flexDirection: 'row',
+  menuButton: {
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  userAvatar: {
-    fontSize: 24,
-    marginRight: 8,
+  menuIcon: {
+    margin: 0,
   },
-  userInfo: {
+  headerCenter: {
     flex: 1,
-  },
-  userName: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  userIdText: {
-    fontSize: 12,
-    opacity: 0.7,
-  },
-  menuAvatar: {
-    fontSize: 20,
-    width: 24,
-  },
-  activeMenuItem: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
-  },
-  activeMenuItemText: {
-    fontWeight: 'bold',
-  },
-  menuDivider: {
-    marginVertical: 8,
-  },
-  testModeToggle: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  toggleRow: { flexDirection: 'row', alignItems: 'center', padding: 10 },
-  toggleLabel: { marginRight: 6, fontWeight: '500' },
-  toggleState: { marginLeft: 6, opacity: 0.7 },
-  modalContent: {
-    padding: 20,
-    margin: 20,
-    borderRadius: 10,
-  },
-  modalTitle: {
+  headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    fontWeight: '600',
+    letterSpacing: -0.3,
   },
-  modalInput: {
-    marginBottom: 16,
+  testBadge: {
+    marginLeft: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+  testBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  headerRight: {
+    width: 48,
   },
 });
 

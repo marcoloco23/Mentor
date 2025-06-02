@@ -34,7 +34,7 @@ export interface TranscriptionResponse {
 const API_BASE_URL = getApiBaseUrl();
 
 /**
- * Sends a message to the Mentor backend chat endpoint.
+ * Sends a message to the Ted backend chat endpoint.
  * @param payload ChatRequest object
  * @returns ChatResponse from backend
  */
@@ -44,7 +44,7 @@ export async function sendMessage(payload: ChatRequest): Promise<ChatResponse> {
 }
 
 /**
- * Streams a message to the Mentor backend using SSE and calls onChunk for each chunk.
+ * Streams a message to the Ted backend using SSE and calls onChunk for each chunk.
  * @param payload ChatRequest object
  * @param onChunk Callback for each streamed chunk
  */
