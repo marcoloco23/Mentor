@@ -208,12 +208,12 @@ class MemoryManager:
         logger.debug(f"Message appended successfully for user_id: {user_id}")
 
     def fetch_recent(
-        self, 
-        user_id: str, 
-        k: int = WINDOW_MESSAGES, 
+        self,
+        user_id: str,
+        k: int = WINDOW_MESSAGES,
         use_time_filtering: bool = True,
         offset: int = 0,
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
     ) -> List[Dict[str, str]]:
         """
         Return the most recent messages, optionally filtered by time gaps.
@@ -227,7 +227,7 @@ class MemoryManager:
         """
         # Use limit if provided, otherwise fall back to k
         actual_limit = limit if limit is not None else k
-        
+
         logger.info(
             f"Fetching recent messages for user_id: {user_id}, k={k}, offset={offset}, "
             f"limit={actual_limit}, time_filtering={use_time_filtering}"
@@ -242,15 +242,17 @@ class MemoryManager:
         # When using pagination (offset > 0), we want to get older messages
         # Calculate the slice indices for pagination
         total_messages = len(messages)
-        
+
         if offset >= total_messages:
-            logger.info(f"Offset {offset} >= total messages {total_messages}, returning empty")
+            logger.info(
+                f"Offset {offset} >= total messages {total_messages}, returning empty"
+            )
             return []
-        
+
         # For pagination, we slice from the end backwards
         start_index = max(0, total_messages - offset - actual_limit)
         end_index = total_messages - offset
-        
+
         # Get the requested slice
         raw_messages = messages[start_index:end_index]
 

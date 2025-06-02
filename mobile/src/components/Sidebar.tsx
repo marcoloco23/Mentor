@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -60,70 +60,70 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [customUserDialogVisible, setCustomUserDialogVisible] = useState(false);
   const [customUserId, setCustomUserId] = useState('');
-  const scheme = effectiveScheme || useColorScheme();
-  const theme = getTheme(scheme);
-  const { width: screenWidth } = Dimensions.get('window');
-  const sidebarWidth = Math.min(320, screenWidth * 0.85);
+  const systemScheme = useColorScheme();
+  
+  // Memoize theme calculations to prevent unnecessary re-renders
+  const scheme = effectiveScheme || systemScheme;
+  const theme = useMemo(() => getTheme(scheme), [scheme]);
+  
+  // Memoize sidebar width calculation
+  const sidebarWidth = useMemo(() => {
+    const { width: screenWidth } = Dimensions.get('window');
+    return Math.min(320, screenWidth * 0.85);
+  }, []);
 
-  const getUserProfile = (id: string) => {
+  // Memoize user profile getter
+  const getUserProfile = useCallback((id: string) => {
     return USER_PROFILES[id as keyof typeof USER_PROFILES] || { 
       name: id, 
       avatar: '👤', 
       status: 'online' 
     };
-  };
+  }, []);
 
-  const handleUserSelect = async (newUserId: string) => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  // Simplified user selection without haptic feedback to avoid performance issues
+  const handleUserSelect = useCallback((newUserId: string) => {
     onUserChange(newUserId);
     // Don't close sidebar here - let the parent handle it
-  };
+  }, [onUserChange]);
 
-  const handleCustomUserSubmit = () => {
+  const handleCustomUserSubmit = useCallback(() => {
     if (customUserId.trim()) {
       onUserChange(customUserId.trim());
       setCustomUserId('');
       setCustomUserDialogVisible(false);
       // Sidebar will close via onUserChange callback in parent
     }
-  };
+  }, [customUserId, onUserChange]);
 
-  const handleTestModeToggle = async (value: boolean) => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  // Remove haptic feedback from settings toggles to improve performance
+  const handleTestModeToggle = useCallback((value: boolean) => {
     onTestModeChange(value);
     // Keep sidebar open for test mode toggle
-  };
+  }, [onTestModeChange]);
 
-  const handleThemeModeChange = async (mode: 'system' | 'light' | 'dark') => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleThemeModeChange = useCallback((mode: 'system' | 'light' | 'dark') => {
     onThemeModeChange(mode);
-  };
+  }, [onThemeModeChange]);
 
+  // Early return to prevent rendering expensive components when not visible
   if (!visible) return null;
 
   return (
     <>
       <Portal>
         <View style={styles.container}>
-          {/* Blur Backdrop */}
+          {/* Simplified backdrop without multiple BlurView configurations */}
           <TouchableOpacity 
             style={styles.backdrop} 
             activeOpacity={1} 
             onPress={onClose}
           >
-            {Platform.OS === 'web' ? (
-              <BlurView 
-                style={StyleSheet.absoluteFill} 
-                intensity={20} 
-                tint={scheme === 'dark' ? 'dark' : 'light'}
-              />
-            ) : (
-              <BlurView 
-                style={StyleSheet.absoluteFill} 
-                intensity={15} 
-                tint={scheme === 'dark' ? 'dark' : 'light'}
-              />
-            )}
+            <BlurView 
+              style={StyleSheet.absoluteFill} 
+              intensity={Platform.OS === 'web' ? 20 : 15} 
+              tint={scheme === 'dark' ? 'dark' : 'light'}
+            />
           </TouchableOpacity>
 
           {/* Sidebar */}

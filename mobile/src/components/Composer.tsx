@@ -75,7 +75,7 @@ const Composer: React.FC<ComposerProps> = ({
 
   const handleSend = () => {
     if (value.trim() && !disabled && !typing) {
-      // Add subtle haptic feedback
+      // Add subtle haptic feedback only on successful send
       if (Platform.OS !== 'web') {
         try {
           const Haptics = require('expo-haptics');
@@ -90,6 +90,7 @@ const Composer: React.FC<ComposerProps> = ({
 
   const handleAttachment = () => {
     if (!disabled && !typing && onAttachment) {
+      // Only add haptic feedback when actually opening attachment
       if (Platform.OS !== 'web') {
         try {
           const Haptics = require('expo-haptics');
@@ -173,7 +174,7 @@ const Composer: React.FC<ComposerProps> = ({
             onKeyPress={onKeyPress}
             editable={!disabled}
             accessibilityLabel="Message input field"
-            accessibilityRole="textbox"
+            accessibilityRole="text"
             selectionColor={paperTheme.colors.primary}
             cursorColor={paperTheme.colors.primary}
             scrollEnabled={true}
@@ -182,7 +183,6 @@ const Composer: React.FC<ComposerProps> = ({
             keyboardType="default"
             returnKeyType="default"
             textAlignVertical={Platform.OS === 'android' ? 'top' : 'center'}
-            showsVerticalScrollIndicator={false}
           />
         </View>
         

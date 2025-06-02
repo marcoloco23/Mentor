@@ -195,8 +195,7 @@ const ChatScreen: React.FC = () => {
     setSidebarVisible(false);
   };
 
-  const handleSidebarToggle = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleSidebarToggle = () => {
     setSidebarVisible(!sidebarVisible);
   };
 

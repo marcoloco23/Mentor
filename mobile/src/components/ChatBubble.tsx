@@ -35,11 +35,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onPress, onLongPress }
   const theme = getTheme(scheme);
   const isUser = message.role === 'user';
 
-  useEffect(() => {
-    if (message.role === 'user' || message.role === 'assistant') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-  }, []);
+  // Note: Automatic haptic feedback on message render was removed for performance reasons.
+  // Haptic feedback is now handled by specific user interactions (onPress/onLongPress) instead.
 
   const bubbleStyle = [
     styles.bubble,
@@ -65,33 +62,33 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onPress, onLongPress }
   // Configure markdown styles based on current theme
   const markdownStyles = {
     body: {
-      color: textStyle.reduce((color, style) => style.color || color, theme.text),
+      color: textStyle.find((style) => style && typeof style === 'object' && 'color' in style)?.color || theme.text,
       fontSize: styles.text.fontSize,
       lineHeight: styles.text.lineHeight,
-      fontWeight: isUser ? styles.userText.fontWeight : 'normal',
+      fontWeight: (isUser ? '500' : 'normal') as 'normal' | 'bold' | '500',
     },
     // Add styling for specific markdown elements
     strong: {
-      fontWeight: 'bold',
+      fontWeight: 'bold' as const,
     },
     em: {
-      fontStyle: 'italic',
+      fontStyle: 'italic' as const,
     },
     heading1: {
       fontSize: styles.text.fontSize * 1.5,
-      fontWeight: 'bold',
+      fontWeight: 'bold' as const,
       marginTop: 10,
       marginBottom: 5,
     },
     heading2: {
       fontSize: styles.text.fontSize * 1.3,
-      fontWeight: 'bold',
+      fontWeight: 'bold' as const,
       marginTop: 8,
       marginBottom: 4,
     },
     heading3: {
       fontSize: styles.text.fontSize * 1.1,
-      fontWeight: 'bold',
+      fontWeight: 'bold' as const,
       marginTop: 6,
       marginBottom: 3,
     },
@@ -132,8 +129,6 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message, onPress, onLongPress }
           ) : (
             <Markdown 
               style={markdownStyles}
-              selectable={true}
-              allowFontScaling={true}
             >
               {message.text}
             </Markdown>
